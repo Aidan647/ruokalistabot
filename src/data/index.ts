@@ -1,4 +1,5 @@
 import type { ElementHandle, JSHandle, Page } from "puppeteer"
+import type { HTMLElement } from "node-html-parser"
 type allergyens = "G" | "L" | "M" | "VL"
 const allergyens = ["G", "L", "M", "VL"] as const
 
@@ -48,9 +49,6 @@ export class FoodStore {
 		}
 		return FoodStore.instance
 	}
-	getFoods() {
-		return this.foods
-	}
 	getAllergyens(data: string[]): Set<allergyens> {
 		const allergyens = new Set<allergyens>()
 		for (const d of data) {
@@ -67,12 +65,38 @@ export class FoodStore {
 		}
 		return allergyens
 	}
-	async scanFoods(page: Page, type: FoodType) {
+	async scanFoods(page: HTMLElement) {
 		// await Bun.sleep(5000)
 		// search Lounas text from page then go one up search all .menu-item and loop
-		const tt = (FoodEnum[type])
-		console.log(tt)
-		const lunchElements = await page.waitForSelector()
+		const lunchElements = page
+			.querySelectorAll(".v-slot > .v-button > .v-button-wrap > .v-button-caption")
+			.filter((el) => {
+				for (const type of FoodTypes)
+					if (el.textContent.trim().includes(FoodEnum[type])) return true
+
+				return false
+			})
+		for (const lunchElement of lunchElements) {
+			// .multiline-button-caption-text
+			const header = lunchElement.querySelector(".multiline-button-caption-text")?.textContent
+			const type = FoodTypes.find((type) => {
+				if (header?.includes(FoodEnum[type])) return true
+				return false
+			})
+			if (!type) continue
+			lunchElement.querySelectorAll(".multiline-button-content-text > .menu-item").forEach((item) => {
+				const ruoka = item.querySelector(".item-name")?.textContent.trim() || null
+				const dietics = this.getAllergyens(
+					item.querySelector(".menuitem-diets")?.textContent.split(", ") ?? []
+				)
+				if (!ruoka) return
+				this.foods.push({
+					type: type,
+					name: ruoka,
+					allergyens: dietics,
+				})
+			})
+		}
 		// if (!lunchElements) return console.log("no lunch elements")
 		// // console.log(lunchElements)
 		// const s = await lunchElements?.screenshot()

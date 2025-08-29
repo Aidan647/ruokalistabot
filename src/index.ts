@@ -1,6 +1,7 @@
 import puppeteer from "puppeteer"
 import fs from "fs/promises"
 import path from "path"
+import { parse } from "node-html-parser"
 import FoodStore from "./data"
 // Or import puppeteer from 'puppeteer-core';
 
@@ -22,12 +23,11 @@ const Store = FoodStore.getInstance()
 await page.waitForNavigation({ waitUntil: "networkidle0" })
 console.log("page loaded");
 await Bun.sleep(500)
-
-
+const content = parse(await page.content())
 // Type into search box using accessible input name.
 // await page.locator("aria/Search").fill("automate beyond recorder")
-// await Store.scanFoods(page, "lounas")
-await Store.scanFoods(page, "kasvis")
+await Store.scanFoods(content)
+// await Store.scanFoods(page, "kasvis")
 // await Store.scanFoods(page, "lisä")
 // await Store.scanFoods(page, "jälki")
 console.log(Store.foods);
