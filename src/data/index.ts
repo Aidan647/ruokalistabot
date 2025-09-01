@@ -1,5 +1,10 @@
 import type { ElementHandle, JSHandle, Page } from "puppeteer"
-import type { HTMLElement } from "node-html-parser"
+import { parse, type HTMLElement } from "node-html-parser"
+import dayjs from "dayjs"
+import z from "zod"
+import path from "path"
+import fs from "fs/promises"
+
 type allergyens = "G" | "L" | "M" | "VL"
 const allergyens = ["G", "L", "M", "VL"] as const
 
@@ -10,6 +15,16 @@ type Food = {
 	name: string
 	allergyens: Set<allergyens>
 }
+const Day = z.object({
+	day: z.string(),
+	foods: z.array(
+		z.object({
+			type: z.enum(FoodTypes),
+			name: z.string(),
+			allergyens: z.set(z.enum(allergyens)),
+		})
+	),
+})
 enum FoodEnum {
 	Lounas = "lounas",
 	lounas = "Lounas",
@@ -36,18 +51,16 @@ function isAllergyen(s: string): s is allergyens {
 	return allergyens.includes(s as allergyens)
 }
 // singleton
-export class FoodStore {
-	foods: Food[] = []
-
+export class Navigator {
 	private constructor() {}
 
-	private static instance: FoodStore
+	private static instance: Navigator
 
-	public static getInstance(): FoodStore {
-		if (!FoodStore.instance) {
-			FoodStore.instance = new FoodStore()
+	public static getInstance(): Navigator {
+		if (!Navigator.instance) {
+			Navigator.instance = new Navigator()
 		}
-		return FoodStore.instance
+		return Navigator.instance
 	}
 	getAllergyens(data: string[]): Set<allergyens> {
 		const allergyens = new Set<allergyens>()
@@ -65,10 +78,8 @@ export class FoodStore {
 		}
 		return allergyens
 	}
-	async scanFoods(page: HTMLElement) {
-		// await Bun.sleep(5000)
-		// search Lounas text from page then go one up search all .menu-item and loop
-		const lunchElements = page
+	scanFoods(dom: HTMLElement) {
+		const lunchElements = dom
 			.querySelectorAll(".v-slot > .v-button > .v-button-wrap > .v-button-caption")
 			.filter((el) => {
 				for (const type of FoodTypes)
@@ -76,6 +87,7 @@ export class FoodStore {
 
 				return false
 			})
+		const foods: Food[] = []
 		for (const lunchElement of lunchElements) {
 			// .multiline-button-caption-text
 			const header = lunchElement.querySelector(".multiline-button-caption-text")?.textContent
@@ -84,52 +96,82 @@ export class FoodStore {
 				return false
 			})
 			if (!type) continue
-			lunchElement.querySelectorAll(".multiline-button-content-text > .menu-item").forEach((item) => {
-				const ruoka = item.querySelector(".item-name")?.textContent.trim() || null
-				const dietics = this.getAllergyens(
-					item.querySelector(".menuitem-diets")?.textContent.split(", ") ?? []
-				)
-				if (!ruoka) return
-				this.foods.push({
-					type: type,
-					name: ruoka,
-					allergyens: dietics,
+			lunchElement
+				.querySelectorAll(".multiline-button-content-text > .menu-item")
+				.forEach((item) => {
+					const ruoka = item.querySelector(".item-name")?.textContent.trim() || null
+					const dietics = this.getAllergyens(
+						item.querySelector(".menuitem-diets")?.textContent.split(", ") ?? []
+					)
+					if (!ruoka) return
+					foods.push({
+						type: type,
+						name: ruoka,
+						allergyens: dietics,
+					})
 				})
-			})
 		}
-		// if (!lunchElements) return console.log("no lunch elements")
-		// // console.log(lunchElements)
-		// const s = await lunchElements?.screenshot()
-		// console.log(await lunchElements.jsonValue())
-		// await Bun.write(`./${type}.png`, s)
-		// const lounas = await lunchElements?.evaluateHandle((node) => node.parentElement)
-		// if (!isElementHandle(lounas)) return console.log("no lounas element")
-
-		// const menuItems = await lounas.$$(".multiline-button-content-text > .menu-item")
-		// console.log(menuItems.length)
-		// for (const item of menuItems) {
-		// 	const [ruoka, dietics] = await Promise.all([
-		// 		item
-		// 			.$(".item-name")
-		// 			.then((n) => n?.evaluate((node) => node.textContent?.trim() || "") ?? null),
-		// 		item
-		// 			.$(".menuitem-diets")
-		// 			.then(
-		// 				(n) =>
-		// 					n?.evaluate(
-		// 						(node) => node.textContent.split(", ").map((s) => s.trim()) || []
-		// 					) ?? null
-		// 			),
-		// 	])
-		// 	if (!ruoka) continue
-		// 	const food: Food = {
-		// 		type,
-		// 		name: ruoka,
-		// 		allergyens: this.getAllergyens(dietics ?? []),
-		// 	}
-		// 	this.foods.push(food)
-		// }
+		return foods
+	}
+	async scanFuture(page: Page) {
+		const format = "D.M.YYYY"
+		let first = true
+		while (true) {
+			console.log("next day")
+			if (first) first = false
+			else await this.goRight(page)
+			const dom = parse(await page.content())
+			const nowDate = dom
+				.querySelector(
+					".main-container > .caption-container > .sub-caption-container > .label-sub-caption > .v-label-sub-title"
+				)
+				?.textContent.replace(/^\w+/, "")
+				.trim()
+			if (!nowDate) {
+				throw new Error("no date found")
+			}
+			const dateNow = dayjs(nowDate, format)
+			const year = dateNow.year()
+			const month = dateNow.month()
+			const day = dateNow.date()
+			const weekday = dateNow.day()
+			if (weekday >= 5) continue
+			const filePath = path.join(
+				"data",
+				year.toString(),
+				(month + 1).toString().padStart(2, "0"),
+				`${day}.json`
+			)
+			const file = Bun.file(filePath)
+			await fs.mkdir(path.dirname(filePath), { recursive: true })
+			console.log(filePath)
+			const foods = this.scanFoods(dom)
+			if (foods.length === 0) {
+				console.log("no foods found, stopping")
+				break
+			}
+			const dayData: z.infer<typeof Day> = {
+				day: dateNow.format("YYYY-MM-DD"),
+				foods: foods,
+			}
+			await file.write(JSON.stringify(dayData))
+		}
+		await Bun.sleep(500)
+	}
+	async goRight(page: Page) {
+		// location="nextdate"
+		await Bun.sleep(100)
+		await Promise.all([
+			page
+				.locator('.button-date-selection[location="nextdate"] > .v-button')
+				.click()
+				.catch((e) => {
+					console.log("error clicking next date", e)
+				}),
+			page.waitForNetworkIdle(),
+		])
+		await Bun.sleep(400)
 	}
 }
 
-export default FoodStore
+export default Navigator
