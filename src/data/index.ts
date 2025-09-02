@@ -30,8 +30,8 @@ enum FoodEnum {
 	lounas = "Lounas",
 	Kasvisruoat = "kasvis",
 	kasvis = "Kasvisruoat",
-	Jälkiruoat = "jälki",
-	jälki = "Jälkiruoat",
+	Jälkiruoka = "jälki",
+	jälki = "Jälkiruoka",
 	Lisäkkeet = "lisä",
 	lisä = "Lisäkkeet",
 	Gluton = "G",
@@ -117,7 +117,6 @@ export class Navigator {
 		const format = "D.M.YYYY"
 		let first = true
 		while (true) {
-			console.log("next day")
 			if (first) first = false
 			else await this.goRight(page)
 			const dom = parse(await page.content())
@@ -135,41 +134,43 @@ export class Navigator {
 			const month = dateNow.month()
 			const day = dateNow.date()
 			const weekday = dateNow.day()
-			if (weekday >= 5) continue
+			if (weekday === 0 || weekday === 6) continue
 			const filePath = path.join(
 				"data",
 				year.toString(),
 				(month + 1).toString().padStart(2, "0"),
-				`${day}.json`
+				`${day.toString().padStart(2, "0")}.json`
 			)
 			const file = Bun.file(filePath)
 			await fs.mkdir(path.dirname(filePath), { recursive: true })
 			console.log(filePath)
 			const foods = this.scanFoods(dom)
 			if (foods.length === 0) {
-				console.log("no foods found, stopping")
+				console.log(`${nowDate}: no foods found, stopping`)
 				break
 			}
 			const dayData: z.infer<typeof Day> = {
 				day: dateNow.format("YYYY-MM-DD"),
 				foods: foods,
 			}
-			await file.write(JSON.stringify(dayData))
+			console.log(dayData);
+			await file.write(
+				JSON.stringify(dayData)
+			)
+			return
 		}
 		await Bun.sleep(500)
 	}
 	async goRight(page: Page) {
 		// location="nextdate"
 		await Bun.sleep(100)
-		await Promise.all([
-			page
-				.locator('.button-date-selection[location="nextdate"] > .v-button')
-				.click()
-				.catch((e) => {
-					console.log("error clicking next date", e)
-				}),
-			page.waitForNetworkIdle(),
-		])
+		await page
+			.locator('.button-date-selection[location="nextdate"] > .v-button')
+			.click()
+			.catch((e) => {
+				console.log("error clicking next date", e)
+			})
+		await page.waitForNetworkIdle()
 		await Bun.sleep(400)
 	}
 }
