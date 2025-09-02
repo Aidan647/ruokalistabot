@@ -1,9 +1,11 @@
-import type { ElementHandle, JSHandle, Page } from "puppeteer"
+import type { Browser, ElementHandle, JSHandle, Page } from "puppeteer"
 import { parse, type HTMLElement } from "node-html-parser"
 import dayjs from "dayjs"
 import z from "zod"
 import path from "path"
 import fs from "fs/promises"
+import puppeteer from "puppeteer"
+import { start } from "repl"
 
 type allergyens = "G" | "L" | "M" | "VL"
 const allergyens = ["G", "L", "M", "VL"] as const
@@ -21,7 +23,7 @@ const Day = z.object({
 		z.object({
 			type: z.enum(FoodTypes),
 			name: z.string(),
-			allergyens: z.set(z.enum(allergyens)),
+			allergyens: z.preprocess((val: any) => new Set(val), z.set(z.enum(allergyens))),
 		})
 	),
 })
@@ -52,6 +54,8 @@ function isAllergyen(s: string): s is allergyens {
 }
 // singleton
 export class Navigator {
+	private Browser?: Browser
+	private Page?: Page
 	private constructor() {}
 
 	private static instance: Navigator
@@ -62,7 +66,40 @@ export class Navigator {
 		}
 		return Navigator.instance
 	}
-	getAllergyens(data: string[]): Set<allergyens> {
+	public static async openAndScan(url: string) {
+		const Nav = Navigator.getInstance()
+		await Nav.startBrowser()
+		await Nav.gotoPage(url)
+		await Nav.scanFuture()
+		await Bun.sleep(1000)
+		await Nav.disconnect()
+	}
+	async disconnect() {
+		if (!this.Browser) return
+		await this.Browser.close()
+		delete this.Browser
+		delete this.Page
+		return
+	}
+	async startBrowser(headless = true) {
+		this.Browser = await puppeteer.launch({ headless })
+		this.Browser.on("disconnected", () => {
+			this.disconnect()
+		})
+		return this.Browser
+	}
+	async gotoPage(url: string) {
+		if (!this.Browser) throw new Error("no browser")
+		this.Page = await this.Browser!.newPage()
+		await this.Page.setViewport({ width: 1080, height: 720 })
+		await Promise.all([
+			this.Page.goto(url),
+			this.Page.waitForNavigation({ waitUntil: "networkidle0" }),
+		])
+		await Bun.sleep(500)
+		return this.Page
+	}
+	static getAllergyens(data: string[]): Set<allergyens> {
 		const allergyens = new Set<allergyens>()
 		for (const d of data) {
 			if (isAllergyen(d)) {
@@ -78,7 +115,7 @@ export class Navigator {
 		}
 		return allergyens
 	}
-	scanFoods(dom: HTMLElement) {
+	static scanFoods(dom: HTMLElement) {
 		const lunchElements = dom
 			.querySelectorAll(".v-slot > .v-button > .v-button-wrap > .v-button-caption")
 			.filter((el) => {
@@ -100,7 +137,7 @@ export class Navigator {
 				.querySelectorAll(".multiline-button-content-text > .menu-item")
 				.forEach((item) => {
 					const ruoka = item.querySelector(".item-name")?.textContent.trim() || null
-					const dietics = this.getAllergyens(
+					const dietics = Navigator.getAllergyens(
 						item.querySelector(".menuitem-diets")?.textContent.split(", ") ?? []
 					)
 					if (!ruoka) return
@@ -113,13 +150,14 @@ export class Navigator {
 		}
 		return foods
 	}
-	async scanFuture(page: Page) {
+	async scanFuture() {
 		const format = "D.M.YYYY"
 		let first = true
 		while (true) {
+			if (!this.Page) throw new Error("no page")
 			if (first) first = false
-			else await this.goRight(page)
-			const dom = parse(await page.content())
+			else await this.goRight()
+			const dom = parse(await this.Page.content())
 			const nowDate = dom
 				.querySelector(
 					".main-container > .caption-container > .sub-caption-container > .label-sub-caption > .v-label-sub-title"
@@ -143,8 +181,7 @@ export class Navigator {
 			)
 			const file = Bun.file(filePath)
 			await fs.mkdir(path.dirname(filePath), { recursive: true })
-			console.log(filePath)
-			const foods = this.scanFoods(dom)
+			const foods = Navigator.scanFoods(dom)
 			if (foods.length === 0) {
 				console.log(`${nowDate}: no foods found, stopping`)
 				break
@@ -153,24 +190,24 @@ export class Navigator {
 				day: dateNow.format("YYYY-MM-DD"),
 				foods: foods,
 			}
-			console.log(dayData);
 			await file.write(
-				JSON.stringify(dayData)
+				JSON.stringify(dayData, (_key, value) => {
+					return value instanceof Set ? [...value] : value
+				})
 			)
-			return
 		}
 		await Bun.sleep(500)
 	}
-	async goRight(page: Page) {
+	async goRight() {
+		if (!this.Page) throw new Error("no page")
 		// location="nextdate"
 		await Bun.sleep(100)
-		await page
-			.locator('.button-date-selection[location="nextdate"] > .v-button')
+		await this.Page.locator('.button-date-selection[location="nextdate"] > .v-button')
 			.click()
 			.catch((e) => {
 				console.log("error clicking next date", e)
 			})
-		await page.waitForNetworkIdle()
+		await this.Page.waitForNetworkIdle()
 		await Bun.sleep(400)
 	}
 }
