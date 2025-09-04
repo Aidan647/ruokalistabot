@@ -1,5 +1,5 @@
-import { SlashCommandBuilder } from "discord.js"
-import type { command } from "./types"
+import { type ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
+import type { Commands, SlashCommand } from "./types"
 export default {
 	data: new SlashCommandBuilder()
 		.setName("test")
@@ -9,4 +9,4 @@ export default {
 		// interaction.member is the GuildMember object, which represents the user in the specific guild
 		await interaction.reply(`This command was run by ${interaction.user.username}.`)
 	},
-} satisfies command
+} satisfies SlashCommand

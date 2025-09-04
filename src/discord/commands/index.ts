@@ -1,8 +1,8 @@
 import { REST, Routes, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js"
 import test from "./test"
-import type { command } from "./types"
+import type { Commands, SlashCommand } from "./types"
 
-export const rawCommands = new Map<string, command>()
+export const rawCommands = new Map<string, Commands>()
 rawCommands.set(test.data.name, test)
 
 // and deploy your commands!

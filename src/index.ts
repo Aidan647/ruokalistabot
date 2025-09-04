@@ -30,4 +30,4 @@ console.log("done")
 await Bun.sleep(1000)
 
 await Bun.sleep(10000)
-process.exit(0)
+// process.exit(0)
