@@ -10,6 +10,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "croner": "^9.1.0",
     "dayjs": "^1.11.18",
     "discord.js": "^14.22.1",
     "node-html-parser": "^7.0.1",
