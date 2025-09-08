@@ -16,7 +16,7 @@ export const Day = z.object({
 		z.object({
 			type: z.enum(FoodTypes),
 			name: z.string(),
-			allergyens: z.preprocess((val: any) => new Set(val), z.set(z.enum(allergyens))),
+			allergyens: z.preprocess((val: any[]) => new Set(val), z.set(z.enum(allergyens))),
 		})
 	),
 })

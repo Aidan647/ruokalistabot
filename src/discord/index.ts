@@ -15,10 +15,12 @@ declare global {
 import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js"
 import type { SlashCommand } from "./commands/types"
 import { rawCommands } from "./commands"
+import DataCache from "../data/DataCache"
 
 export async function startBot() {
 	// Create a new client instance
 	const client = new Client({ intents: [GatewayIntentBits.Guilds] })
+	const cache = DataCache.getInctance()
 	// client.commands = rawCommands
 	// When the client is ready, run this code (only once).
 	// The distinction between `client: Client<boolean>` and `readyClient: Client<true>` is important for TypeScript developers.
