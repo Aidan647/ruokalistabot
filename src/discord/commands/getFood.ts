@@ -1,9 +1,10 @@
-import { MessageFlags, SlashCommandBuilder } from "discord.js"
+import { EmbedBuilder, MessageFlags, SlashCommandBuilder } from "discord.js"
 import type { SlashCommand, SlashCommandOptions } from "./types"
 import z, { number } from "zod"
-import { da } from "zod/locales"
 import dayjs from "dayjs"
 import DataCache from "../../data/DataCache"
+import type { Day } from "../../types"
+import getLocale from "../utility/locale"
 const weekday = z.int().min(1).max(5)
 
 // get dayobject of the next occurrence of the given weekday (1-5, mon-fri)
@@ -23,6 +24,23 @@ function getFoodDay(day: z.infer<typeof weekday> | null): dayjs.Dayjs {
 	if (today < day) return now.day(day)
 
 	return now.add(1, "week").day(day)
+}
+
+function getEmbed(dayData: z.infer<typeof Day>, fi: boolean = false): EmbedBuilder {
+	const embed = new EmbedBuilder()
+		.setColor(0x0099ff) // #0099ff
+		.setTitle(dayData.day.locale(fi ? "fi" : "en").format("dddd, DD.MM.YYYY"))
+		.setTimestamp(dayData.lastUpdated.toDate())
+	for (const type of ["lounas", "kasvis", "lisä", "jälki"] as const) {
+		const foods = dayData.foods.filter((f) => f.type === type)
+		if (foods.length === 0) continue
+		embed.addFields({
+			name: getLocale(type, fi),
+			value: foods.map((f) => `- ${f.name}` + (f.allergyens.size > 0 ? " " + [...f.allergyens.values()].join(", ") : "")).join("\n"),
+		})
+	}
+
+	return embed
 }
 const dataCache = DataCache.getInctance()
 export default {
@@ -51,7 +69,7 @@ export default {
 				.setRequired(false)
 		),
 	async execute(interaction) {
-		const lang = interaction.locale
+		const lang = "fi" || interaction.locale
 		const check = weekday.nullable().safeParse(interaction.options.getNumber("day"))
 		if (!check.success) {
 			await interaction.reply({
@@ -63,21 +81,17 @@ export default {
 		const day = check.data
 		const foodDay = getFoodDay(day)
 		console.log(foodDay.format("dddd, DD.MM.YYYY"), "day:", day)
-		// interaction.user is the object representing the User who ran the command
-		// interaction.member is the GuildMember object, which represents the user in the specific guild
 
-		// const filePath = path.join(
-		// 				"data",
-		// 				year.toString(),
-		// 				(month + 1).toString().padStart(2, "0"),
-		// 				`${day.toString().padStart(2, "0")}.json`
-		// 			)
 		const path = DataCache.getStringDate(foodDay)
 		const data = await dataCache.getFoodForDay(path)
-		console.log(data);
-		await interaction.reply(
-			`${foodDay.format("dddd, DD.MM.YYYY")}:\`\`\`${JSON.stringify(data, null, 2)}\`\`\``
-		)
+		if (!data) {
+			await interaction.reply({
+				content: lang === "fi" ? "Ruokalistaa ei löytynyt!" : "Food menu not found!",
+				flags: MessageFlags.Ephemeral,
+			})
+			return
+		}
+		await interaction.reply({ embeds: [getEmbed(data, lang === "fi")], flags: MessageFlags.Ephemeral })
 		// console.log(interaction)
 	},
 } satisfies SlashCommandOptions

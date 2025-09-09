@@ -4,6 +4,8 @@ import path from "path"
 import { Cron } from "croner"
 import type dayjs from "dayjs"
 
+
+
 export class DataCache {
 	private foodCache: Map<string, z.infer<typeof Day>>
 	private readonly cacheTimeOutStamps = new Map<string, number>()
@@ -48,7 +50,7 @@ export class DataCache {
 		return path.join(
 			day.year().toString(),
 			(day.month() + 1).toString().padStart(2, "0"),
-			`${day.date().toString().padStart(2, "0")}.json`
+			`${day.date().toString().padStart(2, "0")}`
 		)
 	}
 	async getFoodForDay(day: string): Promise<z.infer<typeof Day> | null> {
@@ -59,7 +61,7 @@ export class DataCache {
 		return await this.getFromDisk(day)
 	}
 	async getFromDisk(day: string): Promise<z.infer<typeof Day> | null> {
-		const file = Bun.file(path.join("data", day))
+		const file = Bun.file(path.join("data", day+".json"))
 		if (!(await file.exists())) {
 			this.notfoundCache.add(day)
 			return null

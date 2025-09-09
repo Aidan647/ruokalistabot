@@ -143,14 +143,14 @@ export class Navigator {
 				break
 			}
 			const dayData: z.infer<typeof Day> = {
-				day: dateNow.format("YYYY-MM-DD"),
+				day: dateNow,
 				foods: foods,
+				lastUpdated: dayjs(),
 			}
-			await file.write(
-				JSON.stringify(dayData, (_key, value) => {
-					return value instanceof Set ? [...value] : value
-				})
-			)
+
+			await file.write(JSON.stringify(dayData, (_key, value) => {
+				return value instanceof Set ? [...value] : value
+			})
 		}
 		await Bun.sleep(500)
 	}

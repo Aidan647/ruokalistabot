@@ -5,6 +5,7 @@ import { parse } from "node-html-parser"
 import {Navigator} from "./data/Navigator"
 import dayjs from "dayjs"
 import customParseFormat from "dayjs/plugin/customParseFormat"
+import "dayjs/locale/fi"
 import { heapStats, memoryUsage } from "bun:jsc"
 import { startBot } from "./discord"
 import { deployCommands } from "./discord/commands"
@@ -18,8 +19,9 @@ dayjs.extend(customParseFormat)
 // Navigate the page to a URL.
 const Page = "https://fi.jamix.cloud/apps/menu/?anro=96743&k=1&mt=1"
 // Set screen size.
-// await Navigator.openAndScan(Page)
+const nav = Navigator.openAndScan(Page)
 await deployCommands()
+await nav
 await startBot().then(client => {
 	console.log("Bot started successfully")
 }).catch(error => {
