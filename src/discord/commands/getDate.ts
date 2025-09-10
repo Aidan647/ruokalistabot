@@ -4,6 +4,8 @@ import z, { number } from "zod"
 import { da } from "zod/locales"
 import dayjs from "dayjs"
 import DataCache from "../../data/DataCache"
+import { getEmbed } from "./getFood"
+import getLocale from "../utility/locale"
 
 // get dayobject of the next occurrence of the given weekday (1-5, mon-fri)
 // if day is null, return today
@@ -55,7 +57,7 @@ export default {
 		console.log(foodDay?.format("DD-MM-YYYY"), "day:", day)
 		if (!foodDay) {
 			await interaction.reply({
-				content: lang === "fi" ? "Virheellinen päivä!" : "Invalid day!",
+				content: getLocale("invalidDay", lang === "fi"),
 				flags: MessageFlags.Ephemeral,
 			})
 			return
@@ -64,9 +66,18 @@ export default {
 		const path = DataCache.getStringDate(foodDay)
 		const data = await dataCache.getFoodForDay(path)
 		
-		await interaction.reply(
-			`${foodDay.format("dddd, DD.MM.YYYY")}:\`\`\`${JSON.stringify(data, null, 2)}\`\`\``
-		)
+		if (!data) {
+			await interaction.reply({
+				content: getLocale("noFoodToday", lang === "fi"),
+				flags: MessageFlags.Ephemeral,
+			})
+			return
+		}
+
+		await interaction.reply({
+			embeds: [getEmbed(data, lang === "fi")],
+			flags: MessageFlags.Ephemeral,
+		})
 		// console.log(interaction)
 	},
 } satisfies SlashCommandOptions

@@ -150,7 +150,7 @@ export class Navigator {
 
 			await file.write(JSON.stringify(dayData, (_key, value) => {
 				return value instanceof Set ? [...value] : value
-			})
+			}))
 		}
 		await Bun.sleep(500)
 	}

@@ -19,9 +19,9 @@ dayjs.extend(customParseFormat)
 // Navigate the page to a URL.
 const Page = "https://fi.jamix.cloud/apps/menu/?anro=96743&k=1&mt=1"
 // Set screen size.
-const nav = Navigator.openAndScan(Page)
+// const nav = Navigator.openAndScan(Page)
 await deployCommands()
-await nav
+// await nav
 await startBot().then(client => {
 	console.log("Bot started successfully")
 }).catch(error => {

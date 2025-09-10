@@ -26,7 +26,7 @@ function getFoodDay(day: z.infer<typeof weekday> | null): dayjs.Dayjs {
 	return now.add(1, "week").day(day)
 }
 
-function getEmbed(dayData: z.infer<typeof Day>, fi: boolean = false): EmbedBuilder {
+export function getEmbed(dayData: z.infer<typeof Day>, fi: boolean = false): EmbedBuilder {
 	const embed = new EmbedBuilder()
 		.setColor(0x0099ff) // #0099ff
 		.setTitle(dayData.day.locale(fi ? "fi" : "en").format("dddd, DD.MM.YYYY"))
@@ -36,7 +36,13 @@ function getEmbed(dayData: z.infer<typeof Day>, fi: boolean = false): EmbedBuild
 		if (foods.length === 0) continue
 		embed.addFields({
 			name: getLocale(type, fi),
-			value: foods.map((f) => `- ${f.name}` + (f.allergyens.size > 0 ? " " + [...f.allergyens.values()].join(", ") : "")).join("\n"),
+			value: foods
+				.map(
+					(f) =>
+						`- ${f.name}` +
+						(f.allergyens.size > 0 ? " " + [...f.allergyens.values()].join(", ") : "")
+				)
+				.join("\n"),
 		})
 	}
 
@@ -69,11 +75,11 @@ export default {
 				.setRequired(false)
 		),
 	async execute(interaction) {
-		const lang = "fi" || interaction.locale
+		const lang = interaction.locale
 		const check = weekday.nullable().safeParse(interaction.options.getNumber("day"))
 		if (!check.success) {
 			await interaction.reply({
-				content: lang === "fi" ? "Virheellinen päivä!" : "Invalid day!",
+				content: getLocale("invalidDay", lang === "fi"),
 				flags: MessageFlags.Ephemeral,
 			})
 			return
@@ -86,12 +92,15 @@ export default {
 		const data = await dataCache.getFoodForDay(path)
 		if (!data) {
 			await interaction.reply({
-				content: lang === "fi" ? "Ruokalistaa ei löytynyt!" : "Food menu not found!",
+				content: getLocale("noFoodToday", lang === "fi"),
 				flags: MessageFlags.Ephemeral,
 			})
 			return
 		}
-		await interaction.reply({ embeds: [getEmbed(data, lang === "fi")], flags: MessageFlags.Ephemeral })
+		await interaction.reply({
+			embeds: [getEmbed(data, lang === "fi")],
+			flags: MessageFlags.Ephemeral,
+		})
 		// console.log(interaction)
 	},
 } satisfies SlashCommandOptions
