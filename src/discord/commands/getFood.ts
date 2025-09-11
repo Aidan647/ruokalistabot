@@ -73,6 +73,16 @@ export default {
 				.setDescription("Select the day you want the food menu for")
 				.setDescriptionLocalization("fi", "Valitse päivä, jolta haluat ruokalistan")
 				.setRequired(false)
+		)
+		.addStringOption(
+			(option) =>
+				option
+					.setName("date")
+					.setNameLocalization("fi", "päivä")
+					.setDescription("DD.MM.YYYY / DD.MM format")
+					.setDescriptionLocalization("fi", "PP.KK.VVVV / PP.KK formaatti")
+					.setRequired(true)
+			// .setAutocomplete(true)
 		),
 	async execute(interaction) {
 		const lang = interaction.locale
@@ -84,6 +94,10 @@ export default {
 			})
 			return
 		}
+		const day = interaction.options
+			.getString("date", true)
+			.trim()
+			.replace(/[\.\/\,\_\:]+/g, "-")
 		const day = check.data
 		const foodDay = getFoodDay(day)
 		console.log(foodDay.format("dddd, DD.MM.YYYY"), "day:", day)

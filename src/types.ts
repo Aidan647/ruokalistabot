@@ -11,11 +11,12 @@ export type Food = {
 	name: string
 	allergyens: Set<allergyens>
 }
-export const Day = z.object({
-	day: z.preprocess(
-		(val: number) => dayjs.unix(val),
+const dayjsFromString = z.preprocess(
+		(val: string) => dayjs(val),
 		z.custom<dayjs.Dayjs>((val) => dayjs.isDayjs(val) && val.isValid())
-	),
+	)
+export const Day = z.object({
+	day: dayjsFromString,
 	foods: z.array(
 		z.object({
 			type: z.enum(FoodTypes),
@@ -23,10 +24,7 @@ export const Day = z.object({
 			allergyens: z.preprocess((val: any[]) => new Set(val), z.set(z.enum(allergyens))),
 		})
 	),
-	lastUpdated: z.preprocess(
-		(val: number) => dayjs.unix(val),
-		z.custom<dayjs.Dayjs>((val) => dayjs.isDayjs(val) && val.isValid())
-	),
+	lastUpdated: dayjsFromString,
 })
 export enum FoodEnum {
 	Lounas = "lounas",
