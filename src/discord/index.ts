@@ -21,7 +21,6 @@ import {
 	StringSelectMenuBuilder,
 	StringSelectMenuOptionBuilder,
 } from "discord.js"
-import type { SlashCommand } from "./commands/types"
 import { rawCommands } from "./commands"
 import DataCache from "../data/DataCache"
 import getLocale from "./utility/locale"

@@ -1,16 +1,17 @@
 import { REST, Routes, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js"
 import test from "./test"
 import getFood from "./getFood"
-import getDate from "./getDate"
 import type { Commands, SlashCommand } from "./types"
+import setRole from "./setRole"
 
 export const rawCommands = new Map<string, Commands>()
 function addCommand(command: Commands) {
 	rawCommands.set(command.data.name, command)
 }
-addCommand(test)
+// addCommand(test)
 addCommand(getFood)
-addCommand(getDate)
+addCommand(setRole)
+// addCommand(getDate)
 
 // and deploy your commands!
 export async function deployCommands() {
@@ -29,10 +30,10 @@ export async function deployCommands() {
 	const data: any = await rest.put(
 		Routes.applicationGuildCommands("687941263168765963", "684508139646877708"),
 		{
-			body: commands,
+			body: [],
 		}
 	)
-	await rest.put(Routes.applicationCommands("687941263168765963"), { body: [] })
+	await rest.put(Routes.applicationCommands("687941263168765963"), { body: commands })
 
 	console.log(`Successfully reloaded ${data.length} application (/) commands.`)
 }

@@ -63,12 +63,14 @@ export class DataCache {
 	async getFromDisk(day: string): Promise<z.infer<typeof Day> | null> {
 		const file = Bun.file(path.join("data", day+".json"))
 		if (!(await file.exists())) {
+			console.error(`File for day ${day} does not exist`);
 			this.notfoundCache.add(day)
 			return null
 		}
 		const text = await file.text()
 		const parsed = Day.safeParse(JSON.parse(text))
 		if (!parsed.success) {
+			console.error(`Failed to parse file for day ${day}:`, parsed.error)
 			this.notfoundCache.add(day)
 			return null
 		}
