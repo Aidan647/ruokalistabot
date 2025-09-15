@@ -3,6 +3,8 @@ import test from "./test"
 import getFood from "./getFood"
 import type { Commands, SlashCommand } from "./types"
 import setRole from "./setRole"
+import getRole from "./getRole"
+import setChannel from "./setChannel"
 
 export const rawCommands = new Map<string, Commands>()
 function addCommand(command: Commands) {
@@ -11,7 +13,8 @@ function addCommand(command: Commands) {
 // addCommand(test)
 addCommand(getFood)
 addCommand(setRole)
-// addCommand(getDate)
+addCommand(getRole)
+// addCommand(setChannel)
 
 // and deploy your commands!
 export async function deployCommands() {
@@ -30,7 +33,7 @@ export async function deployCommands() {
 	const data: any = await rest.put(
 		Routes.applicationGuildCommands("687941263168765963", "684508139646877708"),
 		{
-			body: [],
+			body: commands ?? [],
 		}
 	)
 	await rest.put(Routes.applicationCommands("687941263168765963"), { body: commands })

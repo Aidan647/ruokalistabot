@@ -1,5 +1,11 @@
-import { InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js"
-import type { SlashCommandOptions } from "./types"
+import {
+	InteractionContextType,
+	MessageFlags,
+	PermissionFlagsBits,
+	SlashCommandBuilder,
+	type SlashCommandSubcommandsOnlyBuilder,
+} from "discord.js"
+import type { SlashCommandOptions, SlashCommandSubcommands } from "./types"
 import z from "zod"
 import getLocale from "../utility/locale"
 import ServerStore from "../../data/Server"
@@ -10,61 +16,104 @@ import ServerStore from "../../data/Server"
 const serverStore = ServerStore.getInstance()
 export default {
 	data: new SlashCommandBuilder()
-		.setName("setRole")
-		.setNameLocalization("fi", "asetaRooli")
+		.setName("setrole")
+		.setNameLocalization("fi", "asetarooli")
 		.setDescription("Sets a role to be pinged when food is posted")
 		.setDescriptionLocalization("fi", "Asettaa roolin, joka pingataan kun ruoka julkaistaan")
-		.addRoleOption((option) =>
-			option
-				.setName("role")
-				.setNameLocalization("fi", "rooli")
-				.setDescription("Role to be pinged")
-				.setDescriptionLocalization("fi", "Rooli, joka pingataan")
-				.setRequired(false)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName("set")
+				.setNameLocalization("fi", "aseta")
+				.setDescription("Set the role to be pinged")
+				.setDescriptionLocalization("fi", "Aseta pingattava rooli")
+				.addRoleOption((option) =>
+					option
+						.setName("role")
+						.setNameLocalization("fi", "rooli")
+						.setDescription("Role to be pinged")
+						.setDescriptionLocalization("fi", "Rooli, joka pingataan")
+						.setRequired(true)
+				)
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName("clear")
+				.setNameLocalization("fi", "poista")
+				.setDescription("Clear the current role")
+				.setDescriptionLocalization("fi", "Poista nykyinen rooli")
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName("view")
+				.setNameLocalization("fi", "nayta")
+				.setDescription("View the current role")
+				.setDescriptionLocalization("fi", "Näytä nykyinen rooli")
 		)
 		.setDefaultMemberPermissions(
 			PermissionFlagsBits.Administrator |
 				PermissionFlagsBits.ManageRoles |
-				PermissionFlagsBits.ManageRoles
+				PermissionFlagsBits.ModerateMembers
 		)
 		.setContexts(InteractionContextType.Guild),
 	async execute(interaction) {
 		const lang = interaction.locale
-		const role = interaction.options.getRole("role")
+		const command = interaction.options.getSubcommand()
+		if (command !== "clear" && command !== "set" && command !== "view")
+			throw new Error("Invalid subcommand")
+		console.log(command);
 		const serverId = interaction.guildId
 		if (!serverId) {
 			await interaction.reply({
 				content: getLocale("commandError", lang === "fi"),
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			})
 			return
 		}
 		const server = await serverStore.getServer(serverId)
-		if (role === null) {
+		if (command === "clear") {
+			server.roleId = null
+			await serverStore.saveServer(server)
+			await interaction.reply({
+				content: getLocale("noRoleSet", lang === "fi"),
+				flags: MessageFlags.Ephemeral,
+			})
+			return
+		}
+		if (command === "view") {
 			if (server.roleId === null) {
 				await interaction.reply({
 					content: getLocale("noRoleSet", lang === "fi"),
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				})
 				return
 			}
-			await interaction.guild?.roles.fetch(server.roleId).then(async (fetchedRole) => {
-				if (!fetchedRole) {
-					await interaction.reply({
-						content: getLocale("noRoleSet", lang === "fi"),
-						ephemeral: true,
-					})
-					return
-				}
+			const role = (await interaction.guild?.roles.fetch(server.roleId)) ?? false
+			if (role === false) {
 				await interaction.reply({
-					content: getLocale("currentRole", lang === "fi").replaceAll(
-						"{roleId}",
-						fetchedRole.id
-					),
-					ephemeral: true,
+					content: getLocale("noRoleSet", lang === "fi"),
+					flags: MessageFlags.Ephemeral,
 				})
+				return
+			}
+			return await interaction.reply({
+				content: getLocale("currentRole", lang === "fi")
+					.replaceAll("{mention}", role.toString())
+					.replaceAll("{roleId}", role.id),
+				flags: MessageFlags.Ephemeral,
+			})
+		}
+		if (command === "set") {
+			const role = interaction.options.getRole("role", true)
+
+			server.roleId = role.id
+			await serverStore.saveServer(server)
+			await interaction.reply({
+				content: getLocale("roleSet", lang === "fi")
+					.replaceAll("{mention}", role.toString())
+					.replaceAll("{roleId}", role.id),
+				flags: MessageFlags.Ephemeral,
 			})
 			return
 		}
 	},
-} satisfies SlashCommandOptions
+} satisfies SlashCommandSubcommands

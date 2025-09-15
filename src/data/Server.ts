@@ -9,7 +9,7 @@ const ServerData = z.object({
 })
 export type ServerData = z.infer<typeof ServerData>
 const serverDataPath = "./data/servers/"
-class Server {
+export class Server {
 	infoChannels: string[] = []
 	roleId: string | null = null
 	serverId: string

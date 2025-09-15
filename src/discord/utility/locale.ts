@@ -21,12 +21,32 @@ export const locales = {
 		fi: "Ei roolia asetettu pingattavaksi, kun ruoka julkaistaan.",
 	},
 	currentRole: {
-		en: "Current role is <@{roleId}> ({roleId})",
-		fi: "Nykyinen rooli on <@{roleId}> ({roleId})",
+		en: "Current role is {mention} ({roleId})",
+		fi: "Nykyinen rooli on {mention} ({roleId})",
 	},
 	roleSet: {
-		en: "Role to be pinged when food is posted set to <@{roleId}> ({roleId})",
-		fi: "Rooli, joka pingataan kun ruoka julkaistaan, asetettu rooliin <@{roleId}> ({roleId})",
+		en: "Role to be pinged when food is posted set to {mention} ({roleId})",
+		fi: "Rooli, joka pingataan kun ruoka julkaistaan, asetettu rooliin {mention} ({roleId})",
+	},
+	roleAdded: {
+		en: "Role {mention} added to you.",
+		fi: "Rooli {mention} lisätty sinulle.",
+	},
+	roleRemoved: {
+		en: "Role {mention} removed from you.",
+		fi: "Rooli {mention} poistettu sinulta.",
+	},
+	roleAlreadyHas: {
+		en: "You already have the role {mention}.",
+		fi: "Sinulla on jo rooli {mention}.",
+	},
+	roleDoesntHave: {
+		en: "You don't have the role {mention}.",
+		fi: "Sinulla ei ole roolia {mention}.",
+	},
+	roleEveryone: {
+		en: "The role set is the @everyone role, which cannot be added or removed.",
+		fi: "Asetettu rooli on @everyone-rooli, jota ei voi lisätä tai poistaa.",
 	},
 } as const
 
