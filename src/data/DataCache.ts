@@ -9,7 +9,7 @@ import type dayjs from "dayjs"
 export class DataCache {
 	private foodCache: Map<string, z.infer<typeof Day>>
 	private readonly cacheTimeOutStamps = new Map<string, number>()
-	private readonly cacheTimeout = 1000 * 60 * 60 * 24 // 1 day
+	private readonly cacheTimeout = 1000 * 60 * 60 * 36 // 1.5 days
 	private readonly notfoundCache = new Set<string>()
 	private cron: Cron
 	private static instance: DataCache

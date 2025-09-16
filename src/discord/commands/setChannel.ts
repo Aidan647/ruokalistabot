@@ -1,38 +1,64 @@
 import {
+	ChannelType,
 	InteractionContextType,
 	MessageFlags,
 	PermissionFlagsBits,
 	SlashCommandBuilder,
+	SlashCommandChannelOption,
 } from "discord.js"
-import type { SlashCommandOptions } from "./types"
+import type { SlashCommandOptions, SlashCommandSubcommands } from "./types"
 import getLocale from "../utility/locale"
 import ServerStore from "../../data/Server"
-// setChannel command, adds a channel to be used for food posts
+// channel command, adds a channel to be used for food posts
 // only admins can use this command
 // if no channel is given, displays the current channels
 
-const serverStore = ServerStore.getInstance()
+const channelOption = new SlashCommandChannelOption()
+	.setName("channel")
+	.setNameLocalization("fi", "kanava")
+	.setDescription("Channel to be used for food posts")
+	.setDescriptionLocalization("fi", "Kanava, jota käytetään ruokailmoituksille")
+	.setRequired(true)
+	.addChannelTypes(
+		ChannelType.GuildText,
+		ChannelType.GuildAnnouncement,
+		ChannelType.GuildForum,
+		ChannelType.GuildVoice
+	)
 export default {
 	data: new SlashCommandBuilder()
-		.setName("setrole")
-		.setNameLocalization("fi", "asetarooli")
-		.setDescription("Sets a role to be pinged when food is posted")
-		.setDescriptionLocalization("fi", "Asettaa roolin, joka pingataan kun ruoka julkaistaan")
-		.addRoleOption((option) =>
-			option
-				.setName("role")
-				.setNameLocalization("fi", "rooli")
-				.setDescription("Role to be pinged")
-				.setDescriptionLocalization("fi", "Rooli, joka pingataan")
-				.setRequired(false)
+		.setName("channel")
+		.setNameLocalization("fi", "kanava")
+		.setDescription("Sets a channel to be used for food posts")
+		.setDescriptionLocalization("fi", "Asettaa kanavan, jota käytetään ruokailmoituksille")
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName("add")
+				.setNameLocalization("fi", "aseta")
+				.setDescription("Add channel to be used for food posts")
+				.setDescriptionLocalization("fi", "Lisää kanava, jota käytetään ruokailmoituksille")
+				.addChannelOption(channelOption)
 		)
-		.addBooleanOption((option) =>
-			option
-				.setName("clear")
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName("remove")
 				.setNameLocalization("fi", "poista")
-				.setDescription("Clear the current role")
-				.setDescriptionLocalization("fi", "Poista nykyinen rooli")
-				.setRequired(false)
+				.setDescription("Remove channel so channel is no longer used for food posts")
+				.setDescriptionLocalization(
+					"fi",
+					"Poista kanava, jotta kanavaa ei enää käytetä ruokailmoituksille"
+				)
+				.addChannelOption(channelOption)
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName("view")
+				.setNameLocalization("fi", "nayta")
+				.setDescription("View the currently configured food post channels")
+				.setDescriptionLocalization(
+					"fi",
+					"Näytä tällä hetkellä määritetty ruokailmoituskanavat"
+				)
 		)
 		.setDefaultMemberPermissions(
 			PermissionFlagsBits.Administrator |
@@ -42,57 +68,115 @@ export default {
 		.setContexts(InteractionContextType.Guild),
 	async execute(interaction) {
 		const lang = interaction.locale
-		const role = interaction.options.getRole("role")
-		const clear = interaction.options.getBoolean("clear") ?? false
+		const subcommand = interaction.options.getSubcommand(true)
 		const serverId = interaction.guildId
-		if (!serverId) {
-			await interaction.reply({
+		if (
+			!serverId ||
+			!(subcommand === "add" || subcommand === "clear" || subcommand === "view")
+		) {
+			return interaction.editReply({
 				content: getLocale("commandError", lang === "fi"),
-				flags: MessageFlags.Ephemeral,
 			})
-			return
 		}
-		const server = await serverStore.getServer(serverId)
-		if (clear) {
-			server.roleId = null
-			await serverStore.saveServer(server)
-			await interaction.reply({
-				content: getLocale("noRoleSet", lang === "fi"),
-				flags: MessageFlags.Ephemeral,
+		const server = await ServerStore.getServer(serverId)
+		if (!server) {
+			return interaction.editReply({
+				content: getLocale("commandError", lang === "fi"),
 			})
-			return
 		}
-		if (role === null) {
-			if (server.roleId === null) {
-				await interaction.reply({
-					content: getLocale("noRoleSet", lang === "fi"),
-					flags: MessageFlags.Ephemeral,
-				})
-				return
+		const guild = interaction.guild
+		if (!guild) {
+			return interaction.editReply({
+				content: getLocale("commandError", lang === "fi"),
+			})
+		}
+		const channels = await guild.channels.fetch()
+		let removed = 0
+		for (const channelId of server.infoChannels) {
+			if (!channels.has(channelId)) {
+				server.infoChannels.delete(channelId)
+				removed++
 			}
-			return await interaction.guild!.roles.fetch(server.roleId).then(async (fetchedRole) => {
-				if (!fetchedRole)
-					return await interaction.reply({
-						content: getLocale("noRoleSet", lang === "fi"),
-						flags: MessageFlags.Ephemeral,
-					})
-				else
-					return await interaction.reply({
-						content: getLocale("currentRole", lang === "fi")
-							.replaceAll("{mention}", fetchedRole.toString())
-							.replaceAll("{roleId}", fetchedRole.id),
-						flags: MessageFlags.Ephemeral,
-					})
+		}
+		if (removed > 0) await ServerStore.saveServer(server)
+
+		if (subcommand === "view") {
+			if (server.infoChannels.size === 0) {
+				return interaction.editReply({
+					content: getLocale("noChannelsSet", lang === "fi"),
+				})
+			}
+			const channelMentions = [...server.infoChannels]
+
+				.map((id) => {
+					const channel = channels.get(id)
+					if (!channel || !channel.isTextBased()) return null
+					return channel.toString()
+				})
+				.filter((mention) => mention !== null)
+			if (channelMentions.length === 0) {
+				return interaction.editReply({
+					content: getLocale("noChannelsSet", lang === "fi"),
+				})
+			}
+			return interaction.editReply({
+				content: getLocale("channelViewList", lang === "fi").replace(
+					"{channels}",
+					channelMentions.join("\n")
+				),
 			})
 		}
-		server.roleId = role.id
-		await serverStore.saveServer(server)
-		await interaction.reply({
-			content: getLocale("roleSet", lang === "fi")
-				.replaceAll("{mention}", role.toString())
-				.replaceAll("{roleId}", role.id),
-			flags: MessageFlags.Ephemeral,
-		})
-		return
+		if (subcommand === "clear") {
+			const channel = interaction.options.getChannel("channel", true)
+			if (server.infoChannels.has(channel.id)) {
+				server.infoChannels.delete(channel.id)
+				await ServerStore.saveServer(server)
+				return interaction.editReply({
+					content: getLocale("channelRemoved", lang === "fi").replaceAll(
+						"{channel}",
+						channel.toString()
+					),
+				})
+			}
+			return interaction.editReply({
+				content: getLocale("channelNotSet", lang === "fi").replaceAll(
+					"{channel}",
+					channel.toString()
+				),
+			})
+		}
+		if (subcommand === "add") {
+			const channel = interaction.options.getChannel("channel", true, [
+				ChannelType.GuildText,
+				ChannelType.GuildAnnouncement,
+				ChannelType.GuildForum,
+				ChannelType.GuildVoice,
+			])
+			if (!channel.isTextBased()) {
+				return interaction.editReply({
+					content: getLocale("channelNotText", lang === "fi").replaceAll(
+						"{channel}",
+						channel.toString()
+					),
+				})
+			}
+			if (server.infoChannels.has(channel.id)) {
+				return interaction.editReply({
+					content: getLocale("channelAlreadySet", lang === "fi").replaceAll(
+						"{channel}",
+						channel.toString()
+					),
+				})
+			}
+			server.infoChannels.add(channel.id)
+			await ServerStore.saveServer(server)
+			return interaction.editReply({
+				content: getLocale("channelAdded", lang === "fi").replaceAll(
+					"{channel}",
+					channel.toString()
+				),
+			})
+		}
+		subcommand satisfies never
 	},
-} satisfies SlashCommandOptions
+} satisfies SlashCommandSubcommands

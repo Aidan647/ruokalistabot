@@ -48,6 +48,35 @@ export const locales = {
 		en: "The role set is the @everyone role, which cannot be added or removed.",
 		fi: "Asetettu rooli on @everyone-rooli, jota ei voi lisätä tai poistaa.",
 	},
+	channelAdded: {
+		en: "Channel {channel} is added to be used for food posts.",
+		fi: "Kanava {channel} on asetettu käytettäväksi ruokailmoituksille.",
+	},
+	channelRemoved: {
+		en: "The channel {channel} is removed, it will no longer be used for food posts.",
+		fi: "Kanava {channel} on poistettu, sitä ei enää käytetä ruokailmoituksille.",
+	},
+	channelAlreadySet: {
+		en: "The channel {channel} is already set to be used for food posts.",
+		fi: "Kanava {channel} on jo asetettu käytettäväksi ruokailmoituksille.",
+	},
+	channelNotText: {
+		en: "The channel {channel} is not a text channel.",
+		fi: "Kanava {channel} ei ole tekstikanava.",
+	},
+	channelNotSet: {
+		en: "The channel {channel} is not set to be used for food posts.",
+		fi: "Kanavaa {channel} ei ole asetettu käytettäväksi ruokailmoituksille.",
+	},
+
+	channelViewList: {
+		en: "Current channels used for food posts is:\n{channels}",
+		fi: "Tällä hetkellä ruokailmoituksille käytettävät kanavat ovat:\n{channels}",
+	},
+	noChannelsSet: {
+		en: "No channels are set to be used for food posts.",
+		fi: "Ruokailmoituksille ei ole asetettu kanavia.",
+	},
 } as const
 
 export function getLocale<T extends keyof typeof locales, K extends "fi" | "en">(

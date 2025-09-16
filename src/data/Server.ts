@@ -3,14 +3,14 @@ import path from "path"
 import fs from "fs/promises"
 // A class for server configuration and data
 const ServerData = z.object({
-	infoChannels: z.array(z.string()).default([]),
+	infoChannels: z.preprocess((val: any[]) => new Set(val), z.set(z.string())),
 	roleId: z.string().nullable().default(null),
 	serverId: z.string(),
 })
 export type ServerData = z.infer<typeof ServerData>
 const serverDataPath = "./data/servers/"
 export class Server {
-	infoChannels: string[] = []
+	infoChannels: ServerData["infoChannels"]
 	roleId: string | null = null
 	serverId: string
 	serverInctance: any | null = null
@@ -19,9 +19,9 @@ export class Server {
 		this.roleId = data.roleId
 		this.serverId = data.serverId
 	}
-	toJSON(): ServerData {
+	toJSON() {
 		return {
-			infoChannels: this.infoChannels,
+			infoChannels: [...this.infoChannels],
 			roleId: this.roleId,
 			serverId: this.serverId,
 		}
@@ -40,17 +40,16 @@ export class Server {
 			}
 		}
 		// return new server with default values
-		return new Server({ serverId: id, infoChannels: [], roleId: null })
+		return new Server({ serverId: id, infoChannels: new Set, roleId: null })
 	}
 	async getServerInstance() {
 		if (!this.serverInctance) {
 			// lazy load server instance
-			
 		}
 	}
 }
 
-export default class ServerStore {
+export class ServerStore {
 	private servers: Map<string, Server> = new Map()
 	private static instance: ServerStore
 	private constructor() {
@@ -89,4 +88,23 @@ export default class ServerStore {
 			await fs.unlink(filePath)
 		}
 	}
+	*[Symbol.iterator]() {
+		for (const server of this.servers.values()) {
+			yield server
+		}
+	}
+	async loadAll(): Promise<void> {
+		const files = await fs.readdir(serverDataPath)
+		for (const file of files) {
+			if (file.endsWith(".json")) {
+				const id = path.basename(file, ".json")
+				if (this.servers.has(id)) continue
+				const server = await Server.load(id)
+				this.servers.set(id, server)
+			}
+		}
+	}
 }
+
+export const serverStore = ServerStore.getInstance()
+export default serverStore

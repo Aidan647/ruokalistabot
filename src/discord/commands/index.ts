@@ -14,7 +14,7 @@ function addCommand(command: Commands) {
 addCommand(getFood)
 addCommand(setRole)
 addCommand(getRole)
-// addCommand(setChannel)
+addCommand(setChannel)
 
 // and deploy your commands!
 export async function deployCommands() {
@@ -36,7 +36,7 @@ export async function deployCommands() {
 			body: commands ?? [],
 		}
 	)
-	await rest.put(Routes.applicationCommands("687941263168765963"), { body: commands })
+	// await rest.put(Routes.applicationCommands("687941263168765963"), { body: [] ?? commands })
 
 	console.log(`Successfully reloaded ${data.length} application (/) commands.`)
 }

@@ -18,12 +18,18 @@ import {
 	Events,
 	GatewayIntentBits,
 	MessageFlags,
+	NewsChannel,
+	StageChannel,
 	StringSelectMenuBuilder,
 	StringSelectMenuOptionBuilder,
+	TextChannel,
+	VoiceChannel,
 } from "discord.js"
 import { rawCommands } from "./commands"
 import DataCache from "../data/DataCache"
 import getLocale from "./utility/locale"
+import ServerStore from "../data/Server"
+import { channel } from 'diagnostics_channel';
 
 export async function startBot() {
 	// Create a new client instance
@@ -47,6 +53,7 @@ export async function startBot() {
 		}
 
 		try {
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 			await command.execute(interaction)
 		} catch (error) {
 			console.error(error)
@@ -70,34 +77,29 @@ export async function startBot() {
 	})
 
 	// Log in to Discord with your client's token
+	await ServerStore.loadAll()
 	await client.login(process.env.BOT_TOKEN)
-	await client.guilds
-		.fetch("684508139646877708")
-		.then((guild) => guild.channels.fetch("697376499199901697"))
-		.then(async (channel) => {
-			if (!channel?.isTextBased()) return
-			if (!channel) return
-			const select = new StringSelectMenuBuilder()
-				.setCustomId("starter")
-				.setPlaceholder("Make a selection!")
-				.addOptions(
-					new StringSelectMenuOptionBuilder().setLabel("Bulbasaur").setValue("bulbasaur"),
-					new StringSelectMenuOptionBuilder()
-						.setLabel("Charmander")
-						.setValue("charmander"),
-					new StringSelectMenuOptionBuilder().setLabel("Squirtle").setValue("squirtle")
-				)
-
-			const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select)
-
-			const msg = await channel.send({
-				content: "Choose your starter!",
-				components: [row],
+	for (const server of ServerStore) {
+		const guild = await client.guilds.fetch(server.serverId).catch(() => null)
+		if (!guild) continue
+		const channels = await guild.channels.fetch()
+		const sendTo = new Set<NewsChannel | StageChannel | TextChannel | VoiceChannel>()
+		for (const channelId of server.infoChannels) {
+			if (!channels.has(channelId)) return server.infoChannels.delete(channelId)
+			const channel = channels.get(channelId)
+			if (!channel || !channel.isTextBased())
+				return server.infoChannels.delete(channelId)
+			if (!channel.permissionsFor(guild.members.me!).has("SendMessages")) return
+			await channel.sendTyping()
+			sendTo.add(channel)
+		}
+		await Bun.sleep(5000)
+		for (const channel of sendTo) {
+			await channel.send({
+				content: `"food"`,
 			})
-			// await Bun.sleep(2000)
-			// await msg.edit({ components: [] })
-			return
-		})
-		.catch(console.error)
+		}
+	}
+
 	return client
 }

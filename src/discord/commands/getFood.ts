@@ -12,7 +12,9 @@ const weekday = z.int().min(1).max(5)
 // if today past 13:00, return next weekday
 // if today is weekend, return next monday
 function getFoodDay(day: z.infer<typeof weekday> | null): dayjs.Dayjs {
+
 	const now = dayjs().add(12, "h").hour(0).minute(0).second(0).millisecond(0)
+	if (day === 0) return now
 	const today = now.day()
 	if (day === null) {
 		if (today === 6) return now.add(2, "d")
@@ -88,6 +90,7 @@ export default {
 				.setName("day")
 				.setNameLocalization("fi", "viikonpäivä")
 				.addChoices(
+					{ name: "next", value: 0, name_localizations: { fi: "seuraava" } },
 					{ name: "monday", value: 1, name_localizations: { fi: "maanantai" } },
 					{ name: "tuesday", value: 2, name_localizations: { fi: "tiistai" } },
 					{
@@ -116,35 +119,32 @@ export default {
 		const lang = interaction.locale
 		const check = weekday.nullable().safeParse(interaction.options.getNumber("day"))
 
-		const day =
+		const date =
 			check.data ??
 			interaction.options
 				.getString("date")
 				?.trim()
 				?.replace(/[\.\/\,\_\:]+/g, "-") ??
 			null
-		const parced = gatDay(day)
+		const parced = gatDay(date)
 		if (parced === null) {
-			await interaction.reply({
-				content: getLocale("invalidDate", lang === "fi"),
-				flags: MessageFlags.Ephemeral,
+			await interaction.editReply({
+				content: getLocale("invalidDate", lang === "fi")
 			})
 			return
 		}
 
-		console.log(parced.format("dddd, DD.MM.YYYY"), "day:", day)
+		console.log(parced.format("dddd, DD.MM.YYYY"), "day:", date)
 
 		const path = DataCache.getStringDate(parced)
 		const data = await dataCache.getFoodForDay(path)
 		if (!data)
-			await interaction.reply({
-				content: getLocale("noFoodForDay", lang === "fi").replace("{day}", parced.format("DD.MM.YYYY")),
-				flags: MessageFlags.Ephemeral,
+			await interaction.editReply({
+				content: getLocale("noFoodForDay", lang === "fi").replace("{day}", parced.format("DD.MM.YYYY"))
 			})
 		else
-			await interaction.reply({
-				embeds: [getEmbed(data, lang === "fi")],
-				flags: MessageFlags.Ephemeral,
+			await interaction.editReply({
+				embeds: [getEmbed(data, lang === "fi")]
 			})
 		if (
 			interaction.options.getNumber("day") !== null &&
@@ -152,8 +152,7 @@ export default {
 		)
 			// add followup message saying that both day and date were provided, using date
 			await interaction.followUp({
-				content: getLocale("warnigBothDayAndDate", lang === "fi"),
-				flags: MessageFlags.Ephemeral,
+				content: getLocale("warnigBothDayAndDate", lang === "fi")
 			})
 
 		// console.log(interaction)

@@ -13,19 +13,19 @@ import ServerStore from "../../data/Server"
 // only admins can use this command
 // if no role is given, displays the current role
 
-const serverStore = ServerStore.getInstance()
 export default {
 	data: new SlashCommandBuilder()
 		.setName("setrole")
 		.setNameLocalization("fi", "asetarooli")
 		.setDescription("Sets a role to be pinged when food is posted")
 		.setDescriptionLocalization("fi", "Asettaa roolin, joka pingataan kun ruoka julkaistaan")
+		// description must be set on parent command when using subcommands
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName("set")
 				.setNameLocalization("fi", "aseta")
 				.setDescription("Set the role to be pinged")
-				.setDescriptionLocalization("fi", "Aseta pingattava rooli")
+				.setDescriptionLocalization("fi", "Aseta rooli, joka pingataan kun ruoka julkaistaan")
 				.addRoleOption((option) =>
 					option
 						.setName("role")
@@ -39,15 +39,15 @@ export default {
 			subcommand
 				.setName("clear")
 				.setNameLocalization("fi", "poista")
-				.setDescription("Clear the current role")
-				.setDescriptionLocalization("fi", "Poista nykyinen rooli")
+				.setDescription("Clear the configured ping role so no role is pinged")
+				.setDescriptionLocalization("fi", "Poista määritetty ping-rooli, jolloin mitään roolia ei pingata")
 		)
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName("view")
 				.setNameLocalization("fi", "nayta")
-				.setDescription("View the current role")
-				.setDescriptionLocalization("fi", "Näytä nykyinen rooli")
+				.setDescription("View the currently configured ping role")
+				.setDescriptionLocalization("fi", "Näytä tällä hetkellä määritetty ping-rooli")
 		)
 		.setDefaultMemberPermissions(
 			PermissionFlagsBits.Administrator |
@@ -63,57 +63,52 @@ export default {
 		console.log(command);
 		const serverId = interaction.guildId
 		if (!serverId) {
-			await interaction.reply({
-				content: getLocale("commandError", lang === "fi"),
-				flags: MessageFlags.Ephemeral,
+			await interaction.editReply({
+				content: getLocale("commandError", lang === "fi")
 			})
 			return
 		}
-		const server = await serverStore.getServer(serverId)
+		const server = await ServerStore.getServer(serverId)
 		if (command === "clear") {
 			server.roleId = null
-			await serverStore.saveServer(server)
-			await interaction.reply({
-				content: getLocale("noRoleSet", lang === "fi"),
-				flags: MessageFlags.Ephemeral,
+			await ServerStore.saveServer(server)
+			await interaction.editReply({
+				content: getLocale("noRoleSet", lang === "fi")
 			})
 			return
 		}
 		if (command === "view") {
 			if (server.roleId === null) {
-				await interaction.reply({
-					content: getLocale("noRoleSet", lang === "fi"),
-					flags: MessageFlags.Ephemeral,
+				await interaction.editReply({
+					content: getLocale("noRoleSet", lang === "fi")
 				})
 				return
 			}
 			const role = (await interaction.guild?.roles.fetch(server.roleId)) ?? false
 			if (role === false) {
-				await interaction.reply({
-					content: getLocale("noRoleSet", lang === "fi"),
-					flags: MessageFlags.Ephemeral,
+				await interaction.editReply({
+					content: getLocale("noRoleSet", lang === "fi")
 				})
 				return
 			}
-			return await interaction.reply({
+			return await interaction.editReply({
 				content: getLocale("currentRole", lang === "fi")
 					.replaceAll("{mention}", role.toString())
-					.replaceAll("{roleId}", role.id),
-				flags: MessageFlags.Ephemeral,
+					.replaceAll("{roleId}", role.id)
 			})
 		}
 		if (command === "set") {
 			const role = interaction.options.getRole("role", true)
 
 			server.roleId = role.id
-			await serverStore.saveServer(server)
-			await interaction.reply({
+			await ServerStore.saveServer(server)
+			await interaction.editReply({
 				content: getLocale("roleSet", lang === "fi")
 					.replaceAll("{mention}", role.toString())
-					.replaceAll("{roleId}", role.id),
-				flags: MessageFlags.Ephemeral,
+					.replaceAll("{roleId}", role.id)
 			})
 			return
 		}
+		command satisfies never
 	},
 } satisfies SlashCommandSubcommands
