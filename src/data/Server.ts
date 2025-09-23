@@ -1,6 +1,7 @@
 import z from "zod"
 import path from "path"
 import fs from "fs/promises"
+import logger from "../logger"
 // A class for server configuration and data
 const ServerData = z.object({
 	infoChannels: z.preprocess((val: any[]) => new Set(val), z.set(z.string())),
@@ -81,6 +82,7 @@ export class ServerStore {
 		}
 	}
 	async deleteServer(id: string): Promise<void> {
+		logger.debug(`Deleting server data for server ${id}`)
 		this.servers.delete(id)
 		const filePath = path.join(serverDataPath, `${id}.json`)
 		const file = Bun.file(filePath)
@@ -94,6 +96,7 @@ export class ServerStore {
 		}
 	}
 	async loadAll(): Promise<void> {
+		logger.info("Loading all server data")
 		const files = await fs.readdir(serverDataPath)
 		for (const file of files) {
 			if (file.endsWith(".json")) {

@@ -9,6 +9,8 @@ import "dayjs/locale/fi"
 import { heapStats, memoryUsage } from "bun:jsc"
 import { startBot } from "./discord"
 import { deployCommands } from "./discord/commands"
+import { Cron } from "croner"
+import logger from "./logger"
 
 dayjs.extend(customParseFormat)
 // Or import puppeteer from 'puppeteer-core';
@@ -19,17 +21,21 @@ dayjs.extend(customParseFormat)
 // Navigate the page to a URL.
 const Page = "https://fi.jamix.cloud/apps/menu/?anro=96743&k=1&mt=1"
 // Set screen size.
-// const nav = Navigator.openAndScan(Page)
+const nav = Navigator.openAndScan(Page)
 await deployCommands()
-// await nav
-await startBot().then(client => {
-	console.log("Bot started successfully")
+await startBot().then(([client, cron]) => {
+	logger.info("Bot started successfully")
 }).catch(error => {
-	console.error("Error starting bot:", error)
+	logger.error("Error starting bot:", error)
+	process.exit(1)
+})
+await nav
+const dataCheck = new Cron("0 0 2 * * *", async () => {
+	// runs every day at midnight
+	logger.info("Running daily data check")
+	await Navigator.openAndScan(Page).catch(err => {
+		logger.warn("Error during daily data check:", err)
+	})
+	logger.info("Daily data check complete")
 })
 
-console.log("done")
-await Bun.sleep(1000)
-
-await Bun.sleep(10000)
-// process.exit(0)

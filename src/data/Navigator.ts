@@ -6,6 +6,7 @@ import path from "path"
 import fs from "fs/promises"
 import puppeteer from "puppeteer"
 import { Day, FoodEnum, FoodTypes, isAllergyen, type Food, type allergyens } from "../types"
+import logger from "../logger"
 
 
 // singleton
@@ -24,11 +25,16 @@ export class Navigator {
 	}
 	public static async openAndScan(url: string) {
 		const Nav = Navigator.getInstance()
-		await Nav.startBrowser()
-		await Nav.gotoPage(url)
-		await Nav.scanFuture()
-		await Bun.sleep(1000)
-		await Nav.disconnect()
+		try {
+			await Nav.startBrowser()
+			await Nav.gotoPage(url)
+			await Nav.scanFuture()
+			await Bun.sleep(1000)
+			await Nav.disconnect()
+		} catch (error) {
+			await Nav.disconnect()
+			throw error
+		}
 	}
 	async disconnect() {
 		if (!this.Browser) return

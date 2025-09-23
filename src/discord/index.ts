@@ -30,6 +30,8 @@ import DataCache from "../data/DataCache"
 import getLocale from "./utility/locale"
 import ServerStore from "../data/Server"
 import { channel } from 'diagnostics_channel';
+import { Cron } from "croner"
+import sendFood from "./sendFood"
 
 export async function startBot() {
 	// Create a new client instance
@@ -79,27 +81,11 @@ export async function startBot() {
 	// Log in to Discord with your client's token
 	await ServerStore.loadAll()
 	await client.login(process.env.BOT_TOKEN)
-	for (const server of ServerStore) {
-		const guild = await client.guilds.fetch(server.serverId).catch(() => null)
-		if (!guild) continue
-		const channels = await guild.channels.fetch()
-		const sendTo = new Set<NewsChannel | StageChannel | TextChannel | VoiceChannel>()
-		for (const channelId of server.infoChannels) {
-			if (!channels.has(channelId)) return server.infoChannels.delete(channelId)
-			const channel = channels.get(channelId)
-			if (!channel || !channel.isTextBased())
-				return server.infoChannels.delete(channelId)
-			if (!channel.permissionsFor(guild.members.me!).has("SendMessages")) return
-			await channel.sendTyping()
-			sendTo.add(channel)
-		}
-		await Bun.sleep(5000)
-		for (const channel of sendTo) {
-			await channel.send({
-				content: `"food"`,
-			})
-		}
-	}
+	
+	const cron = new Cron("* * * * 1-5", async () => {
+		console.log("Running scheduled food send");
+		await sendFood(client)
+	})
 
-	return client
+	return [client, cron] as const
 }
