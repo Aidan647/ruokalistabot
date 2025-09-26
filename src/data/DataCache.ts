@@ -3,6 +3,7 @@ import { Day } from "../types"
 import path from "path"
 import { Cron } from "croner"
 import type dayjs from "dayjs"
+import logger from "../logger"
 
 
 
@@ -18,7 +19,7 @@ export class DataCache {
 		this.foodCache = new Map()
 		this.cron = new Cron("0 0 * * * *", () => {
 			const removed = this.checkCacheExpiry()
-			console.log(`Cache cleanup done, removed ${removed} entries`)
+			logger.debug(`Cache cleanup done, removed ${removed} entries`)
 		})
 	}
 	static getInctance() {
@@ -41,7 +42,7 @@ export class DataCache {
 		for (const [day] of this.foodCache) {
 			if (!this.cacheTimeOutStamps.has(day)) {
 				this.foodCache.delete(day)
-				console.log("Removed orphaned cache entry for day", day);
+				logger.info("Removed orphaned cache entry for day", day);
 			}
 		}
 		return removed
@@ -63,14 +64,13 @@ export class DataCache {
 	async getFromDisk(day: string): Promise<z.infer<typeof Day> | null> {
 		const file = Bun.file(path.join("data", day+".json"))
 		if (!(await file.exists())) {
-			console.error(`File for day ${day} does not exist`);
 			this.notfoundCache.add(day)
 			return null
 		}
 		const text = await file.text()
 		const parsed = Day.safeParse(JSON.parse(text))
 		if (!parsed.success) {
-			console.error(`Failed to parse file for day ${day}:`, parsed.error)
+			logger.warn(`Failed to parse file for day ${day}:`, parsed.error)
 			this.notfoundCache.add(day)
 			return null
 		}

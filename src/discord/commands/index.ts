@@ -1,10 +1,10 @@
 import { REST, Routes, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js"
-import test from "./test"
 import getFood from "./getFood"
 import type { Commands, SlashCommand } from "./types"
 import setRole from "./setRole"
 import getRole from "./getRole"
 import setChannel from "./setChannel"
+import logger from "../../logger"
 
 export const rawCommands = new Map<string, Commands>()
 function addCommand(command: Commands) {
@@ -30,13 +30,18 @@ export async function deployCommands() {
 	console.log(`Started refreshing ${commands.length} application (/) commands.`)
 
 	// The put method is used to fully refresh all commands in the guild with the current set
-	const data: any = await rest.put(
-		Routes.applicationGuildCommands("687941263168765963", "684508139646877708"),
-		{
-			body: commands ?? [],
-		}
-	)
-	// await rest.put(Routes.applicationCommands("687941263168765963"), { body: [] ?? commands })
+	// const data: any = await rest.put(
+	// 	Routes.applicationGuildCommands("687941263168765963", "684508139646877708"),
+	// 	{
+	// 		body: commands ?? [],
+	// 	}
+	// )
+	const data: any = await rest
+		.put(Routes.applicationCommands("687941263168765963"), { body: commands })
+		.catch((err) => {
+			logger.error("Failed to deploy commands:", err)
+			throw err
+		})
 
 	console.log(`Successfully reloaded ${data.length} application (/) commands.`)
 }

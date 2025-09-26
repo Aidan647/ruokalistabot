@@ -48,6 +48,10 @@ export const locales = {
 		en: "The role set is the @everyone role, which cannot be added or removed.",
 		fi: "Asetettu rooli on @everyone-rooli, jota ei voi lisätä tai poistaa.",
 	},
+	roleMissingPermission: {
+		en: "I don't have permission to manage roles, so I cannot add or remove the role.",
+		fi: "Minulla ei ole oikeutta hallita rooleja, joten en voi lisätä tai poistaa roolia.",
+	},
 	channelAdded: {
 		en: "Channel {channel} is added to be used for food posts.",
 		fi: "Kanava {channel} on asetettu käytettäväksi ruokailmoituksille.",

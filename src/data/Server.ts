@@ -70,11 +70,14 @@ export class ServerStore {
 		this.servers.set(id, server)
 		return server
 	}
-	async saveServer(server: Server | string): Promise<void> {
+	async saveServer(server: Server | string): Promise<boolean> {
 		const srv = typeof server === "string" ? await this.getServer(server) : server
 		const filePath = path.join(serverDataPath, `${srv.serverId}.json`)
 		await fs.mkdir(serverDataPath, { recursive: true })
-		await fs.writeFile(filePath, JSON.stringify(srv.toJSON(), null, 2))
+		return await fs.writeFile(filePath, JSON.stringify(srv.toJSON(), null, 2)).then(()=> true).catch(err => {
+			logger.error(`Failed to save server data for server ${srv.serverId}:`, err)
+			return false
+		})
 	}
 	async saveAll(): Promise<void> {
 		for (const server of this.servers.values()) {

@@ -5,6 +5,7 @@ import type { Day } from "../types"
 import getLocale from "./utility/locale"
 import dayjs from "dayjs"
 import DataCache from '../data/DataCache';
+import logger from "../logger"
 function getTodayEmbed(dayData: z.infer<typeof Day>): EmbedBuilder {
 		const embed = new EmbedBuilder()
 			.setColor(0x0099ff) // #0099ff
@@ -32,14 +33,18 @@ export async function sendFood(client: Client) {
 	const daydata = DataCache.getStringDate(dayjs())
 	const todayData = await DataCacheInstance.getFoodForDay(daydata)
 	if (!todayData) {
-		console.log("No food data for today, not sending")
+		logger.info("No food data for today, not sending")
 		return
 	}
 	const embed = getTodayEmbed(todayData)
 	for (const server of ServerStore.getInstance()) {
 		const guild = await client.guilds.fetch(server.serverId).catch(() => null)
 		if (!guild) continue
-		const channels = await guild.channels.fetch()
+		const channels = await guild.channels.fetch().catch(() => {
+			logger.warn(`Failed to fetch channels for guild ${guild.id}, skipping`)
+			return null
+		})
+		if (!channels) continue
 		const sendTo = new Set<NewsChannel | StageChannel | TextChannel | VoiceChannel>()
 		for (const channelId of server.infoChannels) {
 			if (!channels.has(channelId)) {
@@ -51,14 +56,21 @@ export async function sendFood(client: Client) {
 				server.infoChannels.delete(channelId)
 				continue
 			}
-			if (!channel.permissionsFor(guild.members.me!).has("SendMessages")) continue
-			await channel.sendTyping()
+			if (!channel.permissionsFor(guild.members.me!).has("SendMessages")) {
+				logger.debug(`No permission to send messages in channel ${channel.id} in server ${guild.id}, skipping`)
+				continue
+			}
+			await channel.sendTyping().catch(() => {
+				logger.debug(`Failed to send typing indicator in channel ${channel.id} in server ${guild.id}`)
+			})
 			sendTo.add(channel)
 		}
 		await Bun.sleep(5000)
 		for (const channel of sendTo) {
 			await channel.send({
 				embeds: [embed],
+			}).catch(err => {
+				logger.warn(`Failed to send message to channel ${channel.id} in server ${guild.id}:`, err)
 			})
 			await Bun.sleep(500)
 		}

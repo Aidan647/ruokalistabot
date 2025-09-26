@@ -32,6 +32,7 @@ import ServerStore from "../data/Server"
 import { channel } from 'diagnostics_channel';
 import { Cron } from "croner"
 import sendFood from "./sendFood"
+import logger from "../logger"
 
 export async function startBot() {
 	// Create a new client instance
@@ -50,7 +51,7 @@ export async function startBot() {
 		const command = rawCommands.get(interaction.commandName)
 
 		if (!command) {
-			console.error(`No command matching ${interaction.commandName} was found.`)
+			logger.error(`No command matching ${interaction.commandName} was found.`)
 			return
 		}
 
@@ -58,7 +59,7 @@ export async function startBot() {
 			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 			await command.execute(interaction)
 		} catch (error) {
-			console.error(error)
+			logger.error (error)
 			if (interaction.replied || interaction.deferred) {
 				await interaction.followUp({
 					content: getLocale("commandError", interaction.locale === "fi"),
@@ -72,17 +73,17 @@ export async function startBot() {
 			}
 		}
 	})
-	client.on(Events.InteractionCreate, async (interaction) => {
-		if (!interaction.isStringSelectMenu()) return
-		console.log(interaction.message.id)
-		console.log("Interaction received:", interaction?.customId, interaction.id)
-	})
+	// client.on(Events.InteractionCreate, async (interaction) => {
+	// 	if (!interaction.isStringSelectMenu()) return
+	// 	console.log(interaction.message.id)
+	// 	console.log("Interaction received:", interaction?.customId, interaction.id)
+	// })
 
 	// Log in to Discord with your client's token
 	await ServerStore.loadAll()
 	await client.login(process.env.BOT_TOKEN)
 	
-	const cron = new Cron("* * * * 1-5", async () => {
+	const cron = new Cron("0 0 9 * * 1-5", async () => {
 		console.log("Running scheduled food send");
 		await sendFood(client)
 	})

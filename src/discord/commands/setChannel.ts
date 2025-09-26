@@ -9,6 +9,7 @@ import {
 import type { SlashCommandOptions, SlashCommandSubcommands } from "./types"
 import getLocale from "../utility/locale"
 import ServerStore from "../../data/Server"
+import logger from "../../logger"
 // channel command, adds a channel to be used for food posts
 // only admins can use this command
 // if no channel is given, displays the current channels
@@ -74,18 +75,20 @@ export default {
 			!serverId ||
 			!(subcommand === "add" || subcommand === "clear" || subcommand === "view")
 		) {
+			logger.error("Invalid state in setChannel command: no guild or invalid subcommand:", {
+				serverId,
+				subcommand,
+			})
 			return interaction.editReply({
 				content: getLocale("commandError", lang === "fi"),
 			})
 		}
 		const server = await ServerStore.getServer(serverId)
-		if (!server) {
-			return interaction.editReply({
-				content: getLocale("commandError", lang === "fi"),
-			})
-		}
 		const guild = interaction.guild
 		if (!guild) {
+			logger.error("Failed to fetch guild in setChannel command, this should not happen", {
+				guildId: serverId,
+			})
 			return interaction.editReply({
 				content: getLocale("commandError", lang === "fi"),
 			})
@@ -104,6 +107,11 @@ export default {
 			if (server.infoChannels.size === 0) {
 				return interaction.editReply({
 					content: getLocale("noChannelsSet", lang === "fi"),
+				}).catch((err) => {
+					logger.warn(
+						"Failed to send reply in setChannel view command: no channels set",
+						err
+					)
 				})
 			}
 			const channelMentions = [...server.infoChannels]
@@ -117,6 +125,11 @@ export default {
 			if (channelMentions.length === 0) {
 				return interaction.editReply({
 					content: getLocale("noChannelsSet", lang === "fi"),
+				}).catch((err) => {
+					logger.warn(
+						"Failed to send reply in setChannel view command: no valid channels",
+						err
+					)
 				})
 			}
 			return interaction.editReply({
@@ -124,18 +137,32 @@ export default {
 					"{channels}",
 					channelMentions.join("\n")
 				),
+			}).catch((err) => {
+				logger.warn("Failed to send reply in setChannel view command: valid channels", err)
 			})
 		}
 		if (subcommand === "clear") {
 			const channel = interaction.options.getChannel("channel", true)
 			if (server.infoChannels.has(channel.id)) {
 				server.infoChannels.delete(channel.id)
-				await ServerStore.saveServer(server)
+				const saved = await ServerStore.saveServer(server)
+				if (!saved) {
+					return interaction.editReply({
+						content: getLocale("commandError", lang === "fi"),
+					}).catch((err) => {
+						logger.warn(
+							"Failed to send reply in setChannel remove command: save failed",
+							err
+						)
+					})
+				}
 				return interaction.editReply({
 					content: getLocale("channelRemoved", lang === "fi").replaceAll(
 						"{channel}",
 						channel.toString()
 					),
+				}).catch((err) => {
+					logger.warn("Failed to send reply in setChannel remove command: removed", err)
 				})
 			}
 			return interaction.editReply({
@@ -143,6 +170,8 @@ export default {
 					"{channel}",
 					channel.toString()
 				),
+			}).catch((err) => {
+				logger.warn("Failed to send reply in setChannel remove command: not set", err)
 			})
 		}
 		if (subcommand === "add") {
@@ -158,6 +187,8 @@ export default {
 						"{channel}",
 						channel.toString()
 					),
+				}).catch((err) => {
+					logger.warn("Failed to send reply in setChannel add command: not text based", err)
 				})
 			}
 			if (server.infoChannels.has(channel.id)) {
@@ -166,15 +197,26 @@ export default {
 						"{channel}",
 						channel.toString()
 					),
+				}).catch((err) => {
+					logger.warn("Failed to send reply in setChannel add command: already set", err)
 				})
 			}
 			server.infoChannels.add(channel.id)
-			await ServerStore.saveServer(server)
+			const saved = await ServerStore.saveServer(server)
+			if (!saved) {
+				return interaction.editReply({
+					content: getLocale("commandError", lang === "fi"),
+				}).catch((err) => {
+					logger.warn("Failed to send reply in setChannel add command: save failed", err)
+				})
+			}
 			return interaction.editReply({
 				content: getLocale("channelAdded", lang === "fi").replaceAll(
 					"{channel}",
 					channel.toString()
 				),
+			}).catch((err) => {
+				logger.warn("Failed to send reply in setChannel add command: added", err)
 			})
 		}
 		subcommand satisfies never

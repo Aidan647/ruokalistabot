@@ -9,6 +9,7 @@ import type { SlashCommandOptions, SlashCommandSubcommands } from "./types"
 import z from "zod"
 import getLocale from "../utility/locale"
 import ServerStore from "../../data/Server"
+import logger from "../../logger"
 // setRole command, sets a role to be pinged when food is posted
 // only admins can use this command
 // if no role is given, displays the current role
@@ -59,21 +60,32 @@ export default {
 		const lang = interaction.locale
 		const command = interaction.options.getSubcommand()
 		if (command !== "clear" && command !== "set" && command !== "view")
-			throw new Error("Invalid subcommand")
-		console.log(command);
+			throw new Error("Invalid subcommand: " + command)
 		const serverId = interaction.guildId
 		if (!serverId) {
 			await interaction.editReply({
 				content: getLocale("commandError", lang === "fi")
+			}).catch(() => {
+				logger.warn("Failed to send reply in setRole command: no guild")
 			})
 			return
 		}
 		const server = await ServerStore.getServer(serverId)
 		if (command === "clear") {
 			server.roleId = null
-			await ServerStore.saveServer(server)
+			const saved = await ServerStore.saveServer(server)
+			if (!saved) {
+				await interaction.editReply({
+					content: getLocale("commandError", lang === "fi")
+				}).catch(() => {
+					logger.warn("Failed to send reply in setRole command: clear save failed")
+				})
+				return
+			}
 			await interaction.editReply({
 				content: getLocale("noRoleSet", lang === "fi")
+			}).catch(() => {
+				logger.warn("Failed to send reply in setRole command: clear")
 			})
 			return
 		}
@@ -81,6 +93,8 @@ export default {
 			if (server.roleId === null) {
 				await interaction.editReply({
 					content: getLocale("noRoleSet", lang === "fi")
+				}).catch(() => {
+					logger.warn("Failed to send reply in setRole command: view no role")
 				})
 				return
 			}
@@ -88,6 +102,8 @@ export default {
 			if (role === false) {
 				await interaction.editReply({
 					content: getLocale("noRoleSet", lang === "fi")
+				}).catch(() => {
+					logger.warn("Failed to send reply in setRole command: view invalid role")
 				})
 				return
 			}
@@ -95,17 +111,29 @@ export default {
 				content: getLocale("currentRole", lang === "fi")
 					.replaceAll("{mention}", role.toString())
 					.replaceAll("{roleId}", role.id)
+			}).catch(() => {
+				logger.warn("Failed to send reply in setRole command: view valid role")
 			})
 		}
 		if (command === "set") {
 			const role = interaction.options.getRole("role", true)
 
 			server.roleId = role.id
-			await ServerStore.saveServer(server)
+			const saved = await ServerStore.saveServer(server)
+			if (!saved) {
+				await interaction.editReply({
+					content: getLocale("commandError", lang === "fi")
+				}).catch(() => {
+					logger.warn("Failed to send reply in setRole command: save failed")
+				})
+				return
+			}
 			await interaction.editReply({
 				content: getLocale("roleSet", lang === "fi")
 					.replaceAll("{mention}", role.toString())
 					.replaceAll("{roleId}", role.id)
+			}).catch(() => {
+				logger.warn("Failed to send reply in setRole command: set")
 			})
 			return
 		}
