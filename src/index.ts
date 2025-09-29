@@ -11,12 +11,11 @@ import { startBot } from "./discord"
 import { deployCommands } from "./discord/commands"
 import { Cron } from "croner"
 import logger from "./logger"
-
+import "./env"
 dayjs.extend(customParseFormat)
-// Or import puppeteer from 'puppeteer-core';
 
-
-// Launch the browser and open a new blank page
+await fs.mkdir(path.join(Bun.env.DATA_LOCATION, "servers"), { recursive: true })
+await fs.mkdir(Bun.env.LOG_LOCATION, { recursive: true })
 
 // Navigate the page to a URL.
 const Page = "https://fi.jamix.cloud/apps/menu/?anro=96743&k=1&mt=1"
@@ -37,5 +36,5 @@ const dataCheck = new Cron("0 0 2 * * *", async () => {
 		logger.warn("Error during daily data check:", err)
 	})
 	logger.info("Daily data check complete")
-})
+}, {timezone: Bun.env.TIMEZONE || "Europe/Helsinki"})
 

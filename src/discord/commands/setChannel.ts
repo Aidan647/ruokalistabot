@@ -73,7 +73,7 @@ export default {
 		const serverId = interaction.guildId
 		if (
 			!serverId ||
-			!(subcommand === "add" || subcommand === "clear" || subcommand === "view")
+			!(subcommand === "add" || subcommand === "remove" || subcommand === "view")
 		) {
 			logger.error("Invalid state in setChannel command: no guild or invalid subcommand:", {
 				serverId,
@@ -141,7 +141,7 @@ export default {
 				logger.warn("Failed to send reply in setChannel view command: valid channels", err)
 			})
 		}
-		if (subcommand === "clear") {
+		if (subcommand === "remove") {
 			const channel = interaction.options.getChannel("channel", true)
 			if (server.infoChannels.has(channel.id)) {
 				server.infoChannels.delete(channel.id)

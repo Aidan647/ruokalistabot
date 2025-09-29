@@ -27,21 +27,23 @@ export async function deployCommands() {
 	// Construct and prepare an instance of the REST module
 	const rest = new REST().setToken(process.env.BOT_TOKEN)
 
-	console.log(`Started refreshing ${commands.length} application (/) commands.`)
+	logger.info(`Started refreshing ${commands.length} application (/) commands.`)
 
 	// The put method is used to fully refresh all commands in the guild with the current set
-	// const data: any = await rest.put(
-	// 	Routes.applicationGuildCommands("687941263168765963", "684508139646877708"),
-	// 	{
-	// 		body: commands ?? [],
-	// 	}
-	// )
 	const data: any = await rest
+		.put(Routes.applicationGuildCommands("687941263168765963", "684508139646877708"), {
+			body: [],
+		})
+		.catch((err) => {
+			logger.error("Failed to deploy commands:", err)
+			throw err
+		})
+	await rest
 		.put(Routes.applicationCommands("687941263168765963"), { body: commands })
 		.catch((err) => {
 			logger.error("Failed to deploy commands:", err)
 			throw err
 		})
 
-	console.log(`Successfully reloaded ${data.length} application (/) commands.`)
+	logger.info(`Successfully reloaded ${data.length} application (/) commands.`)
 }

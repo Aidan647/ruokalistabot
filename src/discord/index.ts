@@ -81,12 +81,16 @@ export async function startBot() {
 
 	// Log in to Discord with your client's token
 	await ServerStore.loadAll()
-	await client.login(process.env.BOT_TOKEN)
+	await client.login(Bun.env.BOT_TOKEN)
 	
-	const cron = new Cron("0 0 9 * * 1-5", async () => {
-		console.log("Running scheduled food send");
-		await sendFood(client)
-	})
+	const cron = new Cron(
+		Bun.env.FOOD_SEND_CRON,
+		async () => {
+			console.log("Running scheduled food send")
+			await sendFood(client)
+		},
+		{ timezone: Bun.env.TIMEZONE || "Europe/Helsinki" }
+	)
 
 	return [client, cron] as const
 }

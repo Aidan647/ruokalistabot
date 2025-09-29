@@ -5,6 +5,7 @@ import dayjs from "dayjs"
 import DataCache from "../../data/DataCache"
 import type { Day } from "../../types"
 import getLocale from "../utility/locale"
+import logger from "../../logger"
 const weekday = z.int().min(1).max(5)
 
 // get dayobject of the next occurrence of the given weekday (1-5, mon-fri)
@@ -41,7 +42,7 @@ for (let i = 0; i < dates[0].length; i++) {
 		}
 	}
 }
-console.log(validDates)
+logger.info("Valid date formats:", validDates)
 function getDay(day: string): dayjs.Dayjs | null {
 	const now = dayjs(day, validDates).hour(0).minute(0).second(0).millisecond(0)
 	return now.isValid() ? now : null
@@ -130,22 +131,20 @@ export default {
 		if (parced === null) {
 			await interaction.editReply({
 				content: getLocale("invalidDate", lang === "fi")
-			})
+			}).catch((e) => logger.warn("Failed to send invalid date message:", e))
 			return
 		}
-
-		console.log(parced.format("dddd, DD.MM.YYYY"), "day:", date)
 
 		const path = DataCache.getStringDate(parced)
 		const data = await dataCache.getFoodForDay(path)
 		if (!data)
 			await interaction.editReply({
 				content: getLocale("noFoodForDay", lang === "fi").replace("{day}", parced.format("DD.MM.YYYY"))
-			})
+			}).catch((e) => logger.warn("Failed to send no food for day message:", e))
 		else
 			await interaction.editReply({
 				embeds: [getEmbed(data, lang === "fi")]
-			})
+			}).catch((e) => logger.warn("Failed to send food embed:", e))
 		if (
 			interaction.options.getNumber("day") !== null &&
 			interaction.options.getString("date") !== null
@@ -153,7 +152,7 @@ export default {
 			// add followup message saying that both day and date were provided, using date
 			await interaction.followUp({
 				content: getLocale("warnigBothDayAndDate", lang === "fi")
-			})
+			}).catch((e) => logger.warn("Failed to send warning about both day and date:", e))
 
 		// console.log(interaction)
 	},

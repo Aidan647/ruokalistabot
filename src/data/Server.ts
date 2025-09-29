@@ -9,7 +9,7 @@ const ServerData = z.object({
 	serverId: z.string(),
 })
 export type ServerData = z.infer<typeof ServerData>
-const serverDataPath = "./data/servers/"
+const serverDataPath = path.join(Bun.env.DATA_LOCATION, "servers")
 export class Server {
 	infoChannels: ServerData["infoChannels"]
 	roleId: string | null = null
@@ -37,7 +37,7 @@ export class Server {
 			if (parsed.success) {
 				return new Server(parsed.data)
 			} else {
-				console.error(`Failed to parse server data for server ${id}:`, parsed.error)
+				logger.error(`Failed to parse server data for server ${id}:`, parsed.error)
 			}
 		}
 		// return new server with default values

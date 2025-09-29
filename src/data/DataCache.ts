@@ -10,7 +10,7 @@ import logger from "../logger"
 export class DataCache {
 	private foodCache: Map<string, z.infer<typeof Day>>
 	private readonly cacheTimeOutStamps = new Map<string, number>()
-	private readonly cacheTimeout = 1000 * 60 * 60 * 36 // 1.5 days
+	private readonly cacheTimeout = 1000 * 60 * 60 * 48 // 2 days
 	private readonly notfoundCache = new Set<string>()
 	private cron: Cron
 	private static instance: DataCache
@@ -62,7 +62,7 @@ export class DataCache {
 		return await this.getFromDisk(day)
 	}
 	async getFromDisk(day: string): Promise<z.infer<typeof Day> | null> {
-		const file = Bun.file(path.join("data", day+".json"))
+		const file = Bun.file(path.join(Bun.env.DATA_LOCATION, day+".json"))
 		if (!(await file.exists())) {
 			this.notfoundCache.add(day)
 			return null

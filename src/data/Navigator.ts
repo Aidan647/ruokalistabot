@@ -26,13 +26,16 @@ export class Navigator {
 	public static async openAndScan(url: string) {
 		const Nav = Navigator.getInstance()
 		try {
+			logger.info("Starting browser and scanning", { url })
 			await Nav.startBrowser()
 			await Nav.gotoPage(url)
 			await Nav.scanFuture()
 			await Bun.sleep(1000)
 			await Nav.disconnect()
+			logger.info("Finished scanning")
 		} catch (error) {
 			await Nav.disconnect()
+			logger.error("Error in openAndScan", { error })
 			throw error
 		}
 	}
@@ -136,7 +139,7 @@ export class Navigator {
 			const weekday = dateNow.day()
 			if (weekday === 0 || weekday === 6) continue
 			const filePath = path.join(
-				"data",
+				Bun.env.DATA_LOCATION,
 				year.toString(),
 				(month + 1).toString().padStart(2, "0"),
 				`${day.toString().padStart(2, "0")}.json`
@@ -167,7 +170,7 @@ export class Navigator {
 		await this.Page.locator('.button-date-selection[location="nextdate"] > .v-button')
 			.click()
 			.catch((e) => {
-				console.log("error clicking next date", e)
+				logger.warn("error clicking next date", e)
 			})
 		await this.Page.waitForNetworkIdle()
 		await Bun.sleep(400)
