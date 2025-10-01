@@ -10,7 +10,9 @@ import logger from "../logger"
 export class DataCache {
 	private foodCache: Map<string, z.infer<typeof Day>>
 	private readonly cacheTimeOutStamps = new Map<string, number>()
-	private readonly cacheTimeout = 1000 * 60 * 60 * 48 // 2 days
+	private readonly cacheTimeout = 1000 * 60 * 60 * (Bun.env.CACHE_TIMEOUT_HOURS || 48)
+
+	// 404 cache is cleared entirely every time
 	private readonly notfoundCache = new Set<string>()
 	private cron: Cron
 	private static instance: DataCache
@@ -22,7 +24,7 @@ export class DataCache {
 			logger.debug(`Cache cleanup done, removed ${removed} entries`)
 		})
 	}
-	static getInctance() {
+	static getInstance() {
 		if (!DataCache.instance) {
 			DataCache.instance = new DataCache()
 		}
@@ -42,7 +44,7 @@ export class DataCache {
 		for (const [day] of this.foodCache) {
 			if (!this.cacheTimeOutStamps.has(day)) {
 				this.foodCache.delete(day)
-				logger.info("Removed orphaned cache entry for day", day);
+				logger.info("Removed orphaned cache entry for day", day)
 			}
 		}
 		return removed
@@ -62,7 +64,7 @@ export class DataCache {
 		return await this.getFromDisk(day)
 	}
 	async getFromDisk(day: string): Promise<z.infer<typeof Day> | null> {
-		const file = Bun.file(path.join(Bun.env.DATA_LOCATION, day+".json"))
+		const file = Bun.file(path.join(Bun.env.DATA_LOCATION, day + ".json"))
 		if (!(await file.exists())) {
 			this.notfoundCache.add(day)
 			return null

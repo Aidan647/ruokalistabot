@@ -25,7 +25,7 @@ Short, actionable instructions for an AI coding agent to be productive in this r
 
 ## Integration points & hardcoded values to watch
 - Discord: `deployCommands()` uses hard-coded application/guild IDs. If you deploy to another guild/account, update these IDs in `src/discord/commands/index.ts`.
-- Environment: `BOT_TOKEN` must be set. The code expects a production-style token in `process.env.BOT_TOKEN`.
+- Environment: `BOT_TOKEN` must be set. The code expects a production-style token in `Bun.env.BOT_TOKEN`.
 - Puppeteer is included for scraping (`puppeteer` dependency). The repo includes a sample `Page` URL in `src/index.ts`.
 
 ## How to add a new slash command (concrete steps)

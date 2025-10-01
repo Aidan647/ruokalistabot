@@ -28,7 +28,7 @@ function getTodayEmbed(dayData: z.infer<typeof Day>): EmbedBuilder {
 	
 		return embed
 }
-const DataCacheInstance = DataCache.getInctance()
+const DataCacheInstance = DataCache.getInstance()
 export async function sendFood(client: Client) {
 	const daydata = DataCache.getStringDate(dayjs())
 	const todayData = await DataCacheInstance.getFoodForDay(daydata)

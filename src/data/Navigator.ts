@@ -76,7 +76,7 @@ export class Navigator {
 				allergyens.add(b)
 				continue
 			}
-			console.log("unknown dietic", d)
+			logger.warn("Unknown allergyen found:", d)
 		}
 		return allergyens
 	}
@@ -148,7 +148,7 @@ export class Navigator {
 			await fs.mkdir(path.dirname(filePath), { recursive: true })
 			const foods = Navigator.scanFoods(dom)
 			if (foods.length === 0) {
-				console.log(`${nowDate}: no foods found, stopping`)
+				logger.info(`${nowDate}: no foods found, stopping`)
 				break
 			}
 			const dayData: z.infer<typeof Day> = {

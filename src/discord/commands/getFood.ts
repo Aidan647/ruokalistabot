@@ -6,7 +6,7 @@ import DataCache from "../../data/DataCache"
 import type { Day } from "../../types"
 import getLocale from "../utility/locale"
 import logger from "../../logger"
-const weekday = z.int().min(1).max(5)
+const weekday = z.int().min(0).max(5)
 
 // get dayobject of the next occurrence of the given weekday (1-5, mon-fri)
 // if day is null, return today
@@ -43,10 +43,7 @@ for (let i = 0; i < dates[0].length; i++) {
 	}
 }
 logger.info("Valid date formats:", validDates)
-function getDay(day: string): dayjs.Dayjs | null {
-	const now = dayjs(day, validDates).hour(0).minute(0).second(0).millisecond(0)
-	return now.isValid() ? now : null
-}
+
 export function getEmbed(dayData: z.infer<typeof Day>, fi: boolean = false): EmbedBuilder {
 	const embed = new EmbedBuilder()
 		.setColor(0x0099ff) // #0099ff
@@ -70,16 +67,16 @@ export function getEmbed(dayData: z.infer<typeof Day>, fi: boolean = false): Emb
 	return embed
 }
 
-function gatDay(day: string | number | null): dayjs.Dayjs | null {
+function getDay(day: string | number | null): dayjs.Dayjs | null {
 	if (typeof day === "string") {
-		const date = getDay(day)
-		if (!date) return null
+		const date = dayjs(day, validDates).hour(0).minute(0).second(0).millisecond(0)
+		if (!date.isValid()) return null
 		return date
 	}
 	return getFoodDay(day)
 }
 
-const dataCache = DataCache.getInctance()
+const dataCache = DataCache.getInstance()
 export default {
 	data: new SlashCommandBuilder()
 		.setName("getfood")
@@ -127,7 +124,7 @@ export default {
 				?.trim()
 				?.replace(/[\.\/\,\_\:]+/g, "-") ??
 			null
-		const parced = gatDay(date)
+		const parced = getDay(date)
 		if (parced === null) {
 			await interaction.editReply({
 				content: getLocale("invalidDate", lang === "fi")

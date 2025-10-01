@@ -14,7 +14,6 @@ export class Server {
 	infoChannels: ServerData["infoChannels"]
 	roleId: string | null = null
 	serverId: string
-	serverInctance: any | null = null
 	constructor(data: ServerData) {
 		this.infoChannels = data.infoChannels
 		this.roleId = data.roleId
@@ -42,11 +41,6 @@ export class Server {
 		}
 		// return new server with default values
 		return new Server({ serverId: id, infoChannels: new Set, roleId: null })
-	}
-	async getServerInstance() {
-		if (!this.serverInctance) {
-			// lazy load server instance
-		}
 	}
 }
 

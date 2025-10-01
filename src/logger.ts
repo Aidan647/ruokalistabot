@@ -40,16 +40,16 @@ const logger = winston.createLogger({
 	),
 	// defaultMeta: { service: "user-service" },
 	transports: [
-		new winston.transports.Console({
-			format: winston.format.combine(
-				winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-				winston.format.colorize(),
-				winston.format.printf(({ timestamp, level, message }) => {
-					return `${timestamp} [${level}]: ${message}`
-				})
-			),
-			level: "silly",
-		}),
+		// new winston.transports.Console({
+		// 	format: winston.format.combine(
+		// 		winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+		// 		winston.format.colorize(),
+		// 		winston.format.printf(({ timestamp, level, message }) => {
+		// 			return `${timestamp} [${level}]: ${message}`
+		// 		})
+		// 	),
+		// 	level: "silly",
+		// }),
 		new winston.transports.Console({
 			format: winston.format.combine(
 				winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),

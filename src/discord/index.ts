@@ -1,5 +1,5 @@
-if (!process.env.BOT_TOKEN) {
-	console.log("No BOT_TOKEN found in environment variables")
+if (!Bun.env.BOT_TOKEN) {
+	console.info("No BOT_TOKEN found in environment variables")
 	process.exit(501)
 }
 
@@ -37,17 +37,15 @@ import logger from "../logger"
 export async function startBot() {
 	// Create a new client instance
 	const client = new Client({ intents: [GatewayIntentBits.Guilds] })
-	const cache = DataCache.getInctance()
 	// client.commands = rawCommands
 	// When the client is ready, run this code (only once).
 	// The distinction between `client: Client<boolean>` and `readyClient: Client<true>` is important for TypeScript developers.
 	// It makes some properties non-nullable.
 	client.once(Events.ClientReady, (readyClient) => {
-		console.log(`Ready! Logged in as ${readyClient.user.tag}`)
+		logger.info(`Ready! Logged in as ${readyClient.user.tag}`)
 	})
 	client.on(Events.InteractionCreate, async (interaction) => {
 		if (!interaction.isChatInputCommand()) return
-		console.log(`Interaction received: ${interaction.commandName}`)
 		const command = rawCommands.get(interaction.commandName)
 
 		if (!command) {
