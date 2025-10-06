@@ -34,16 +34,14 @@ import { Cron } from "croner"
 import sendFood from "./sendFood"
 import logger from "../logger"
 
-export async function startBot() {
+export async function startBot(): Promise<readonly [Client<true>, Cron]> {
 	// Create a new client instance
 	const client = new Client({ intents: [GatewayIntentBits.Guilds] })
 	// client.commands = rawCommands
 	// When the client is ready, run this code (only once).
 	// The distinction between `client: Client<boolean>` and `readyClient: Client<true>` is important for TypeScript developers.
 	// It makes some properties non-nullable.
-	client.once(Events.ClientReady, (readyClient) => {
-		logger.info(`Ready! Logged in as ${readyClient.user.tag}`)
-	})
+	
 	client.on(Events.InteractionCreate, async (interaction) => {
 		if (!interaction.isChatInputCommand()) return
 		const command = rawCommands.get(interaction.commandName)
@@ -79,8 +77,15 @@ export async function startBot() {
 
 	// Log in to Discord with your client's token
 	await ServerStore.loadAll()
+	const botready = new Promise<Client<true>>((resolve) => {
+		client.once(Events.ClientReady, (client) => resolve(client))
+	})
 	await client.login(Bun.env.BOT_TOKEN)
-	
+	await botready
+	if (!client.isReady()) {
+		logger.error("Client failed to become ready after login")
+		throw new Error("Client failed to become ready after login")
+	}
 	const cron = new Cron(
 		Bun.env.FOOD_SEND_CRON,
 		async () => {

@@ -17,7 +17,7 @@ addCommand(getRole)
 addCommand(setChannel)
 
 // and deploy your commands!
-export async function deployCommands() {
+export async function deployCommands(appID: string) {
 	const commands: RESTPostAPIChatInputApplicationCommandsJSONBody[] = []
 
 	for (const [name, rawCommand] of rawCommands) {
@@ -31,7 +31,7 @@ export async function deployCommands() {
 
 	// The put method is used to fully refresh all commands in the guild with the current set
 	const data: any = await rest
-		.put(Routes.applicationCommands("687941263168765963"), { body: commands })
+		.put(Routes.applicationCommands(appID), { body: commands })
 		.catch((err) => {
 			logger.error("Failed to deploy commands:", err)
 			throw err

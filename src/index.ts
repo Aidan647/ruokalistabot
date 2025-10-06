@@ -21,9 +21,9 @@ await fs.mkdir(Bun.env.LOG_LOCATION, { recursive: true })
 const Page = "https://fi.jamix.cloud/apps/menu/?anro=96743&k=1&mt=1"
 // Set screen size.
 const nav = Navigator.openAndScan(Page)
-await deployCommands()
-await startBot().then(([client, cron]) => {
+await startBot().then(async ([client, cron]) => {
 	logger.info("Bot started successfully")
+	await deployCommands(client.application.id)
 }).catch(error => {
 	logger.error("Error starting bot:", error)
 	process.exit(1)
