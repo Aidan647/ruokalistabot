@@ -8,7 +8,6 @@ import puppeteer from "puppeteer"
 import { Day, FoodEnum, FoodTypes, isAllergyen, type Food, type allergyens } from "../types"
 import logger from "../logger"
 
-
 // singleton
 export class Navigator {
 	private Browser?: Browser
@@ -47,7 +46,13 @@ export class Navigator {
 		return
 	}
 	async startBrowser(headless = true) {
-		this.Browser = await puppeteer.launch({ headless })
+		if (Bun.env.CUSTOM_BROWSER_PRODUCT && Bun.env.CUSTOM_BROWSER_PATH)
+			this.Browser = await puppeteer.launch({
+				headless,
+				browser: Bun.env.CUSTOM_BROWSER_PRODUCT,
+				executablePath: Bun.env.CUSTOM_BROWSER_PATH,
+			})
+		else this.Browser = await puppeteer.launch({ headless })
 		this.Browser.on("disconnected", () => {
 			this.disconnect()
 		})
@@ -157,9 +162,11 @@ export class Navigator {
 				lastUpdated: dayjs(),
 			}
 
-			await file.write(JSON.stringify(dayData, (_key, value) => {
-				return value instanceof Set ? [...value] : value
-			}))
+			await file.write(
+				JSON.stringify(dayData, (_key, value) => {
+					return value instanceof Set ? [...value] : value
+				})
+			)
 		}
 		await Bun.sleep(500)
 	}

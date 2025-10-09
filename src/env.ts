@@ -54,6 +54,27 @@ if (!Bun.env.TIMEZONE) {
 	// @ts-ignore
 	Bun.env.TIMEZONE = "Europe/Helsinki"
 }
+
+// # Optional
+// CUSTOM_BROWSER_PRODUCT=
+// #CUSTOM_BROWSER_PRODUCT="chrome" or "firefox"
+// CUSTOM_BROWSER_PATH=
+// #CUSTOM_BROWSER_PATH="/usr/bin/chromium"
+if (Bun.env.CUSTOM_BROWSER_PRODUCT) {
+	if (
+		Bun.env.CUSTOM_BROWSER_PRODUCT !== "chrome" &&
+		Bun.env.CUSTOM_BROWSER_PRODUCT !== "firefox"
+	) {
+		logger.warn("Invalid CUSTOM_BROWSER_PRODUCT, must be 'chrome' or 'firefox', ignoring")
+		// @ts-ignore
+		Bun.env.CUSTOM_BROWSER_PRODUCT = undefined
+	}
+}
+if (Bun.env.CUSTOM_BROWSER_PRODUCT && Bun.env.CUSTOM_BROWSER_PATH) {
+	logger.info(`Using custom browser product ${Bun.env.CUSTOM_BROWSER_PRODUCT} at path ${Bun.env.CUSTOM_BROWSER_PATH}`)
+} else if (Bun.env.CUSTOM_BROWSER_PRODUCT || Bun.env.CUSTOM_BROWSER_PATH) {
+	logger.warn("Only one of CUSTOM_BROWSER_PRODUCT or CUSTOM_BROWSER_PATH is set, ignoring both")
+}
 declare global {
 	namespace NodeJS {
 		interface ProcessEnv {
@@ -65,6 +86,8 @@ declare global {
 			readonly FOOD_API_URL: string
 			readonly FOOD_SEND_CRON: string
 			readonly TIMEZONE: string
+			readonly CUSTOM_BROWSER_PRODUCT?: "chrome" | "firefox"
+			readonly CUSTOM_BROWSER_PATH?: string
 		}
 	}
 }
