@@ -13,23 +13,14 @@ declare global {
 
 // Require the necessary discord.js classes
 import {
-	ActionRowBuilder,
 	Client,
 	Events,
 	GatewayIntentBits,
 	MessageFlags,
-	NewsChannel,
-	StageChannel,
-	StringSelectMenuBuilder,
-	StringSelectMenuOptionBuilder,
-	TextChannel,
-	VoiceChannel,
 } from "discord.js"
 import { rawCommands } from "./commands"
-import DataCache from "../data/DataCache"
 import getLocale from "./utility/locale"
 import ServerStore from "../data/Server"
-import { channel } from 'diagnostics_channel';
 import { Cron } from "croner"
 import sendFood from "./sendFood"
 import logger from "../logger"

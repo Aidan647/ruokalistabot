@@ -1,5 +1,3 @@
-import { fi } from "zod/locales"
-
 export const locales = {
 	lounas: { en: "Lunch", fi: "Lounas" },
 	kasvis: { en: "Vegetarian", fi: "Kasvis" },

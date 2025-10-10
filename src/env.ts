@@ -1,5 +1,4 @@
 import logger from "./logger"
-import { mkdir } from "fs/promises"
 
 if (!Bun.env.BOT_TOKEN) {
 	logger.error("No BOT_TOKEN found in environment variables, exiting")

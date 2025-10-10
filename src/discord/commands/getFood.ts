@@ -1,4 +1,4 @@
-import { EmbedBuilder, MessageFlags, SlashCommandBuilder } from "discord.js"
+import { EmbedBuilder, SlashCommandBuilder } from "discord.js"
 import type { SlashCommandOptions } from "./types"
 import z from "zod"
 import dayjs from "dayjs"

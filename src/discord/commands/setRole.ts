@@ -1,12 +1,9 @@
 import {
 	InteractionContextType,
-	MessageFlags,
 	PermissionFlagsBits,
 	SlashCommandBuilder,
-	type SlashCommandSubcommandsOnlyBuilder,
 } from "discord.js"
-import type { SlashCommandOptions, SlashCommandSubcommands } from "./types"
-import z from "zod"
+import type { SlashCommandSubcommands } from "./types"
 import getLocale from "../utility/locale"
 import ServerStore from "../../data/Server"
 import logger from "../../logger"

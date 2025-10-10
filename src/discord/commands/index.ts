@@ -1,6 +1,6 @@
 import { REST, Routes, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js"
 import getFood from "./getFood"
-import type { Commands, SlashCommand } from "./types"
+import type { Commands } from "./types"
 import setRole from "./setRole"
 import getRole from "./getRole"
 import setChannel from "./setChannel"

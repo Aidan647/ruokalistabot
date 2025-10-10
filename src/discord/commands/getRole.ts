@@ -1,15 +1,12 @@
 import {
-	ChatInputCommandInteraction,
 	GuildMemberRoleManager,
 	InteractionContextType,
-	MessageFlags,
 	PermissionFlagsBits,
 	SlashCommandBuilder,
 } from "discord.js"
-import type { SlashCommandOptions, SlashCommandSubcommands } from "./types"
-import z from "zod"
+import type { SlashCommandSubcommands } from "./types"
 import getLocale from "../utility/locale"
-import ServerStore, { type Server } from "../../data/Server"
+import ServerStore from "../../data/Server"
 import logger from "../../logger"
 // getRole command, sets a role to a user when role is set on server
 
