@@ -1,3 +1,5 @@
+import { fi } from "zod/locales"
+
 export const locales = {
 	lounas: { en: "Lunch", fi: "Lounas" },
 	kasvis: { en: "Vegetarian", fi: "Kasvis" },
@@ -81,6 +83,10 @@ export const locales = {
 		en: "No channels are set to be used for food posts.",
 		fi: "Ruokailmoituksille ei ole asetettu kanavia.",
 	},
+	noPermissionChannel: {
+		en: "I don't have permission to send messages in {channel}, so I cannot use it for food posts.",
+		fi: "Minulla ei ole oikeutta lähettää viestejä kanavassa {channel}, joten en voi käyttää sitä ruokailmoituksille.",
+	}
 } as const
 
 export function getLocale<T extends keyof typeof locales, K extends "fi" | "en">(

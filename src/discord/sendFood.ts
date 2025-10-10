@@ -65,9 +65,19 @@ export async function sendFood(client: Client) {
 			})
 			sendTo.add(channel)
 		}
+		if (sendTo.size === 0) continue
+		// get role to be pinged
+		if (server.roleId) {
+			const role = await guild.roles.fetch(server.roleId).catch(() => null)
+			if (role && role.editable && role.mentionable) {
+				role.toString()
+			}
+		}
 		await Bun.sleep(5000)
+		const role = server.roleId ? await guild.roles.fetch(server.roleId).catch(() => null) : null
 		for (const channel of sendTo) {
 			await channel.send({
+				content: role ? role.toString() : undefined,
 				embeds: [embed],
 			}).catch(err => {
 				logger.warn(`Failed to send message to channel ${channel.id} in server ${guild.id}:`, err)

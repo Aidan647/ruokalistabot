@@ -89,11 +89,10 @@ export async function startBot(): Promise<readonly [Client<true>, Cron]> {
 	const cron = new Cron(
 		Bun.env.FOOD_SEND_CRON,
 		async () => {
-			console.log("Running scheduled food send")
+			logger.info("Running scheduled food send")
 			await sendFood(client)
 		},
 		{ timezone: Bun.env.TIMEZONE || "Europe/Helsinki" }
 	)
-
 	return [client, cron] as const
 }

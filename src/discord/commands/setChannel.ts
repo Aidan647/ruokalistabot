@@ -84,7 +84,7 @@ export default {
 			})
 		}
 		const server = await ServerStore.getServer(serverId)
-		const guild = interaction.guild
+		const guild = interaction.guild ?? await interaction.client.guilds.fetch(serverId)
 		if (!guild) {
 			logger.error("Failed to fetch guild in setChannel command, this should not happen", {
 				guildId: serverId,
@@ -199,6 +199,19 @@ export default {
 					),
 				}).catch((err) => {
 					logger.warn("Failed to send reply in setChannel add command: already set", err)
+				})
+			}
+			if (!channel.permissionsFor(guild.members.me!).has("SendMessages")) {
+				return interaction.editReply({
+					content: getLocale("noPermissionChannel", lang === "fi").replaceAll(
+						"{channel}",
+						channel.toString()
+					),
+				}).catch((err) => {
+					logger.warn(
+						"Failed to send reply in setChannel add command: no permission",
+						err
+					)
 				})
 			}
 			server.infoChannels.add(channel.id)
