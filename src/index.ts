@@ -20,7 +20,7 @@ const Page = "https://fi.jamix.cloud/apps/menu/?anro=96743&k=1&mt=1"
 const nav = Navigator.openAndScan(Page).catch(async () => {
 	// retry once after 120 seconds
 	logger.warn("Retrying initial scan after 120 seconds")
-	return Bun.sleep(120*1000).then(() => Navigator.openAndScan(Page))
+	return Bun.sleep(120*1000).then(async () => Navigator.openAndScan(Page))
 }).catch(err => {
 	logger.error("Error during initial scan:", err)
 })
