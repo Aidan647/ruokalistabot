@@ -15,7 +15,7 @@ await fs.mkdir(path.join(Bun.env.DATA_LOCATION, "servers"), { recursive: true })
 await fs.mkdir(Bun.env.LOG_LOCATION, { recursive: true })
 
 // Navigate the page to a URL.
-const Page = "https://fi.jamix.cloud/apps/menu/?anro=96743&k=1&mt=1"
+const Page = Bun.env.FOOD_API_URL || "https://fi.jamix.cloud/apps/menu/?anro=96743&k=1&mt=1"
 // Set screen size.
 const nav = Navigator.openAndScan(Page).catch(async () => {
 	// retry once after 120 seconds
